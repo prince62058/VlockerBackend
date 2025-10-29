@@ -83,6 +83,44 @@ const getAllCustomersloan = async (req, res) => {
     });
   }
 };
+const getAllloans = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      createdBy: req.userId,
+    };
+
+    const loans = await Loan.find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const totalLoans = await Loan.countDocuments(filter);
+
+    const totalPages = Math.ceil(totalLoans / limit);
+    const pagination = {
+      totalLoans,
+      totalPages: totalPages,
+      currentPage: page,
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Customers Loan retrieved successfully",
+      data: loans,
+      pagination,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving customers Loan",
+      error: error.message,
+    });
+  }
+};
 
 const getCustomerloanById = async (req, res) => {
   try {
