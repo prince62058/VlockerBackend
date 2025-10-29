@@ -5,6 +5,7 @@ const {
   getCustomerloanById,
   updateCustomerloan,
   deleteCustomerloan,
+  getAllloans,
 } = require("../controllers/CustomerLoan.controller.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
 
@@ -13,6 +14,7 @@ const router = express.Router({ mergeParams: true });
 router.use(authMiddleware)
 
 router.get("/:customerId", getAllCustomersloan);
+router.get("/", getAllloans);
 router.post("/:customerId", createCustomerloan);
 
 router.get("/single/:loanId", getCustomerloanById);

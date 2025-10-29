@@ -79,12 +79,12 @@ const customerloanSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // emiStartDate: {
-    //   type: Date,
-    // },
-    // emiEndDate: {
-    //   type: Date,
-    // },
+    emiStartDate: {
+      type: Date,
+    },
+    emiEndDate: {
+      type: Date,
+    },
    loanStatus: {
       type: String,
       enum: ["active", "completed", "defaulted", "closed"],
