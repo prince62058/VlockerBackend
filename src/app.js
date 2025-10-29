@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
@@ -13,10 +14,23 @@ const InstallationVideoRoutes = require("./routes/InstallationVideo.routes");
 const companySupportRoutes = require("./routes/Company.routes");
 
 const app = express();
-
+const limiter = rateLimit({
+  windowMs: 15*60*1000,
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler:(req,res)=>{
+    res.status(429).json({
+      success:false,
+      message:'Too many requests from this IP, please try again later.'
+    })
+  }
+})
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(limiter);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);

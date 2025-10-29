@@ -44,7 +44,7 @@ const sendCustomerOtp = async (req, res) => {
       "123456" || Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = getExpiryDate();
     const hashedOtp = await bcrypt.hash(otp, OTP_SALT_ROUNDS);
-    phoneOtp = {
+  const   phoneOtp = {
       codeHash: hashedOtp,
       expiresAt,
       attempts: 0,
@@ -89,8 +89,8 @@ const verifyOtpAndCreateCustomer = async (req, res) => {
     const customer = await Customer.findOne({
       customerMobileNumber,
       createdBy: req.userId,
-    });
-
+    }).select("+phoneOtp.codeHash");
+ console.log(customer);
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -107,14 +107,16 @@ const verifyOtpAndCreateCustomer = async (req, res) => {
     if (!normalizedOtp) {
       return res.status(400).json({ success: false, message: "OTP is required" });
     }
-
-    if (!user.phoneOtp.codeHash) {
+    if (!customer.phoneOtp.codeHash) {
       return res.status(400).json({ success: false, message: "No OTP hash found. Please request a new OTP" });
     }
+       if (customer.phoneOtp.attempts >= MAX_OTP_ATTEMPTS) {
+        return res.status(400).json({ success: false, message: "Maximum OTP attempts exceeded. Please request a new OTP" });
+    }
 
-    const result = await bcrypt.compare(normalizedOtp, user.phoneOtp.codeHash)
+    const result = await bcrypt.compare(normalizedOtp, customer.phoneOtp.codeHash)
     if (!result) {
-      user.phoneOtp.attempts = user.phoneOtp.attempts + 1;
+      customer.phoneOtp.attempts = customer.phoneOtp.attempts + 1;
       await customer.save();
       return res.status(400).json({ success: false, message: "Invalid OTP. Please try again" });
 
