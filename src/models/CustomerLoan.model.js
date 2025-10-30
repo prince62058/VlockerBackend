@@ -87,9 +87,52 @@ const customerloanSchema = new mongoose.Schema(
     },
    loanStatus: {
       type: String,
-      enum: ["active", "completed", "defaulted", "closed"],
-      default: "active",
+      enum: ["APPROVED", "PENDING", "REJECTED", "CLOSED"],
+      default: "APPROVED",
     },
+    deviceUnlockStatus: {
+      type: String,
+      enum: ["LOCKED", "UNLOCKED"],
+      default: "UNLOCKED", 
+
+    },
+    installments: [
+      {
+        installmentNumber: {
+          type: Number,
+     
+        },
+        dueDate: {
+          type: Date,
+        },
+        amount: {
+          type: Number,
+        },
+        status: {
+          type: String,
+          enum: ["PENDING", "PAID", "OVERDUE", "PARTIAL"],
+          default: "PENDING",
+        },
+        paidAmount: {
+          type: Number,
+          default: 0,
+        },
+        paidDate: {
+          type: Date,
+        },
+        paymentMethod: {
+          type: String,
+          enum: ["cash", "upi", "autopay/autodebit"],
+        },
+        lateFee: {
+          type: Number,
+          default: 0,
+        },
+        remarks: {
+          type: String,
+        },
+      },
+    ],
 
   },
   { timestamps: true }

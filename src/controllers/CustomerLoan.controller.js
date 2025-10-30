@@ -1,5 +1,6 @@
 const Loan = require("../models/CustomerLoan.model");
 const Customer = require("../models/Customer.model");
+const { default: mongoose } = require("mongoose");
 
 const createCustomerloan = async (req, res) => {
   const { customerId } = req.params;
@@ -88,15 +89,54 @@ const getAllloans = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-
+    const runningDevice = req.query.runningDevice || null;
+    const newDevice = req.query.newDevice || null;
     const filter = {
-      createdBy: req.userId,
+      createdBy: new mongoose.Types.ObjectId(req.userId),
     };
 
-    const loans = await Loan.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    // const loans = await Loan.find(filter)
+    //   .skip(skip)
+    //   .limit(limit)
+    //   .sort({ createdAt: -1 }).populate('customerId');
+    console.log("Filters applied:", { runningDevice, newDevice });
+    const loans = await Loan.aggregate([
+      { $match: filter },
+      ...(runningDevice
+        ? [
+          {
+            $match: { loanStatus: "APPROVED",
+            emiStartDate: { $lte: new Date() }
+            }
+            
+          },
+        ]
+        : []),
+      ...(newDevice
+        ? [
+          {
+            $match: {
+              loanStatus: "APPROVED",
+              emiStartDate: { $gte: new Date() }
+            }
+            ,
+          },
+        ]
+        : []),
+        {
+          $lookup:{
+            from:"customers",
+            localField:"customerId",
+            foreignField:"_id",
+            as:"customerId"
+          }
+        },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+
+    ])
+    //  console.log(loans)
 
     const totalLoans = await Loan.countDocuments(filter);
 

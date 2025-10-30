@@ -14,7 +14,6 @@ const customerSchema = new mongoose.Schema(
     },
     customerMobileNumber: {
       type: String,
-      unique: true,  
       trim: true,
     },
     address: {

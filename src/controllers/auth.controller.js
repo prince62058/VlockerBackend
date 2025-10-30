@@ -39,7 +39,7 @@ const sendOtp = async (req, res) => {
         phone,
       });
     }
-    const otp = "123456";
+    const otp = "1234";
     const expiresAt = getExpiryDate();
     const hashedOtp = await bcrypt.hash(otp, OTP_SALT_ROUNDS);
     user.phoneOtp = {

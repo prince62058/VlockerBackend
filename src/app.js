@@ -12,6 +12,7 @@ const customerLoan = require("./routes/CustomerLoan.routes");
 const feedbackRoutes = require("./routes/Feedback.routes");
 const InstallationVideoRoutes = require("./routes/InstallationVideo.routes");
 const companySupportRoutes = require("./routes/Company.routes");
+const homeRoutes=require('./routes/Home.routes')
 
 const app = express();
 const limiter = rateLimit({
@@ -40,6 +41,7 @@ app.use("/api/customerLoan", customerLoan);
 app.use("/api/address", addressRoutes);
 app.use("/api/bank", bankRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use('/api/home',homeRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
 

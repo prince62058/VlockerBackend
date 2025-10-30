@@ -1,6 +1,7 @@
 const Customer = require("../models/Customer.model");
 const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
+const { default: mongoose } = require("mongoose");
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || "set-a-secure-jwt-secret";
 const DEFAULT_OTP_LENGTH = parseInt(process.env.PHONE_OTP_LENGTH || "4", 10);
@@ -24,6 +25,8 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
 }
 const sendCustomerOtp = async (req, res) => {
   const { customerName, customerMobileNumber, address } = req.body;
+  // await Customer.collection.dropIndex('customerMobileNumber_1');
+
 
   // if (!customerName || !customerMobileNumber || !address) {
   //   return res.status(400).json({
@@ -163,12 +166,40 @@ const getAllCustomers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = { createdBy: req.userId, isVerified: true };
+    const filter = { createdBy: new mongoose.Types.ObjectId(req.userId), isVerified: true };
 
-    const customers = await Customer.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    // const customers = await Customer.find(filter)
+    //   .skip(skip)
+    //   .limit(limit)
+    //   .sort({ createdAt: -1 });
+  const customers = await Customer.aggregate([
+  { $match: filter },
+  {
+    $lookup: {
+      from: "loans",
+      localField: "_id",
+      foreignField: "customerId",
+      as: "Loan"
+    }
+  },
+  {
+    $addFields: {
+      activeLoans: {
+        $size: {
+          $filter: {
+            input: "$Loan",
+            as: "loan",
+            cond: { $eq: ["$$loan.loanStatus", "APPROVED"] }
+          }
+        }
+      }
+    }
+  },
+  { $sort: { createdAt: -1 } },
+  { $skip: skip },
+  { $limit: limit }
+])
+
 
     const totalCustomers = await Customer.countDocuments(filter);
     const totalPages = Math.ceil(totalCustomers / limit);
