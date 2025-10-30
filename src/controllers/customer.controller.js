@@ -3,14 +3,19 @@ const bcrypt = require("bcrypt");
 const dotenv = require("dotenv");
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || "set-a-secure-jwt-secret";
-const DEFAULT_OTP_LENGTH = parseInt(process.env.PHONE_OTP_LENGTH || "6", 10);
-const DEFAULT_EXPIRY_MINUTES = parseInt(process.env.PHONE_OTP_EXPIRY_MINUTES || "10", 10);
-const MAX_OTP_ATTEMPTS = parseInt(process.env.PHONE_OTP_MAX_ATTEMPTS || "5", 10);
+const DEFAULT_OTP_LENGTH = parseInt(process.env.PHONE_OTP_LENGTH || "4", 10);
+const DEFAULT_EXPIRY_MINUTES = parseInt(
+  process.env.PHONE_OTP_EXPIRY_MINUTES || "10",
+  10
+);
+const MAX_OTP_ATTEMPTS = parseInt(
+  process.env.PHONE_OTP_MAX_ATTEMPTS || "5",
+  10
+);
 const OTP_SALT_ROUNDS = parseInt(
   process.env.PHONE_OTP_SALT_ROUNDS || process.env.BCRYPT_SALT_ROUNDS || "10",
   10
 );
-
 
 function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
   const expiry = new Date();
@@ -20,12 +25,12 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
 const sendCustomerOtp = async (req, res) => {
   const { customerName, customerMobileNumber, address } = req.body;
 
-  if (!customerName || !customerMobileNumber || !address) {
-    return res.status(400).json({
-      success: false,
-      message: "Name, Mobile Number, and Address are required.",
-    });
-  }
+  // if (!customerName || !customerMobileNumber || !address) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Name, Mobile Number, and Address are required.",
+  //   });
+  // }
 
   try {
     const existingVerifiedCustomer = await Customer.findOne({
@@ -41,10 +46,10 @@ const sendCustomerOtp = async (req, res) => {
     }
 
     const otp =
-      "123456" || Math.floor(100000 + Math.random() * 900000).toString();
+      "1234" || Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = getExpiryDate();
     const hashedOtp = await bcrypt.hash(otp, OTP_SALT_ROUNDS);
-  const   phoneOtp = {
+    const phoneOtp = {
       codeHash: hashedOtp,
       expiresAt,
       attempts: 0,
@@ -65,7 +70,7 @@ const sendCustomerOtp = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      otp: "123456",
+      otp: "1234",
       message: "OTP sent to customer successfully.",
     });
   } catch (error) {
@@ -90,7 +95,7 @@ const verifyOtpAndCreateCustomer = async (req, res) => {
       customerMobileNumber,
       createdBy: req.userId,
     }).select("+phoneOtp.codeHash");
-//  console.log(customer);
+
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -102,26 +107,37 @@ const verifyOtpAndCreateCustomer = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Customer is already verified." });
     }
-    
+
     const normalizedOtp = String(otp || "").trim();
     if (!normalizedOtp) {
-      return res.status(400).json({ success: false, message: "OTP is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP is required" });
     }
     if (!customer.phoneOtp.codeHash) {
-      return res.status(400).json({ success: false, message: "No OTP hash found. Please request a new OTP" });
+      return res.status(400).json({
+        success: false,
+        message: "No OTP hash found. Please request a new OTP",
+      });
     }
-       if (customer.phoneOtp.attempts >= MAX_OTP_ATTEMPTS) {
-        return res.status(400).json({ success: false, message: "Maximum OTP attempts exceeded. Please request a new OTP" });
+    if (customer.phoneOtp.attempts >= MAX_OTP_ATTEMPTS) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum OTP attempts exceeded. Please request a new OTP",
+      });
     }
 
-    const result = await bcrypt.compare(normalizedOtp, customer.phoneOtp.codeHash)
+    const result = await bcrypt.compare(
+      normalizedOtp,
+      customer.phoneOtp.codeHash
+    );
     if (!result) {
       customer.phoneOtp.attempts = customer.phoneOtp.attempts + 1;
       await customer.save();
-      return res.status(400).json({ success: false, message: "Invalid OTP. Please try again" });
-
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid OTP. Please try again" });
     }
-
 
     customer.isVerified = true;
     customer.phoneOtp = undefined;
@@ -184,7 +200,7 @@ const getCustomerById = async (req, res) => {
     const customer = await Customer.findOne({
       _id: req.params.id,
       createdBy: req.userId,
-    }).populate('Loan Bank Address');
+    }).populate("Loan Bank Address");
     if (!customer) {
       return res
         .status(404)

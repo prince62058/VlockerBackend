@@ -11,40 +11,59 @@ const {
   addBankPassbook,
 } = require("../controllers/customer.controller");
 
-const bankRouter = require("./CustomerBank.routes.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
-const { uploadImage } = require("../middleware/upload.middleware.js"); // change export to object
-const addressRouter = require("./CustomerAddress.routes");
-const loanRouter = require("./CustomerLoan.routes.js");
+const { uploadImage } = require("../middleware/upload.middleware.js");
+const validateRequest = require("../middleware/validateRequest.js");
+const {
+  sendCustomerOtpSchema,
+  verifyCustomerOtpSchema,
+  aadhaarKycSchema,
+  panKycSchema,
+  bankPassbookSchema,
+  updateCustomerSchema,
+} = require("../validations/customerValidation");
+
 const router = express.Router();
 
 router.use(authMiddleware);
-router.post("/send-otp", sendCustomerOtp);
+router.post(
+  "/send-otp",
+  validateRequest(sendCustomerOtpSchema),
+  sendCustomerOtp
+);
+router.post(
+  "/verify-and-create",
+  validateRequest(verifyCustomerOtpSchema),
+  verifyOtpAndCreateCustomer
+);
 
-// router.use("/:customerId/addresses", addressRouter);
-// router.use("/:customerId/loans", loanRouter);
-
-router.post("/verify-and-create", verifyOtpAndCreateCustomer);
 router.get("/", getAllCustomers);
 router.get("/:id", getCustomerById);
-router.put("/:id", updateCustomer);
+router.put("/:id", validateRequest(updateCustomerSchema), updateCustomer);
 router.delete("/:id", deleteCustomer);
 
 router.put(
   "/:id/kyc/aadhaar",
+  validateRequest(aadhaarKycSchema),
   uploadImage.fields([
     { name: "aadhaarFront", maxCount: 1 },
     { name: "aadhaarBack", maxCount: 1 },
   ]),
   completeAadhaarKYC
 );
-router.put("/:id/kyc/pan", uploadImage.single("panPhoto"), completePanKYC);
+
+router.put(
+  "/:id/kyc/pan",
+  validateRequest(panKycSchema),
+  uploadImage.single("panPhoto"),
+  completePanKYC
+);
+
 router.put(
   "/:id/kyc/bankpassbook",
+  validateRequest(bankPassbookSchema),
   uploadImage.single("bankPassbookPhoto"),
   addBankPassbook
 );
-
-// router.use("/:customerId/bank", bankRouter);
 
 module.exports = router;
