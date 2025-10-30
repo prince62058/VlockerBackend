@@ -1,15 +1,15 @@
-const CompanySupport = require("../models/Company.model.js");
+const Company = require("../models/Company.model.js");
 
 const createSupportInfo = async (req, res) => {
   try {
-    const existing = await CompanySupport.findOne();
+    const existing = await Company.findOne();
     if (existing) {
       return res
         .status(400)
         .json({ success: false, message: "Support info already exists" });
     }
 
-    const support = new CompanySupport(req.body);
+    const support = new Company(req.body);
     await support.save();
 
     res.status(201).json({
@@ -24,11 +24,9 @@ const createSupportInfo = async (req, res) => {
 
 const updateSupportInfo = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updated = await CompanySupport.findByIdAndUpdate(id, req.body, {
+    const updated = await Company.findOneAndUpdate({}, req.body, {
       new: true,
     });
-
     if (!updated) {
       return res
         .status(404)
@@ -47,7 +45,7 @@ const updateSupportInfo = async (req, res) => {
 
 const getSupportInfo = async (req, res) => {
   try {
-    const support = await CompanySupport.findOne();
+    const support = await Company.findOne();
     if (!support) {
       return res
         .status(404)

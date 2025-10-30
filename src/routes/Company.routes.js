@@ -7,8 +7,8 @@ const {
 
 const router = express.Router();
 
-router.post("/create-support", createSupportInfo);
-router.put("/update-support/:id", updateSupportInfo);
-router.get("/get-support", getSupportInfo);
+router.post("/", createSupportInfo);
+router.put("/", updateSupportInfo);
+router.get("/", getSupportInfo);
 
 module.exports = router;

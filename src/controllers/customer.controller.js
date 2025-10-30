@@ -90,7 +90,7 @@ const verifyOtpAndCreateCustomer = async (req, res) => {
       customerMobileNumber,
       createdBy: req.userId,
     }).select("+phoneOtp.codeHash");
- console.log(customer);
+//  console.log(customer);
     if (!customer) {
       return res.status(404).json({
         success: false,
@@ -184,7 +184,7 @@ const getCustomerById = async (req, res) => {
     const customer = await Customer.findOne({
       _id: req.params.id,
       createdBy: req.userId,
-    });
+    }).populate('Loan Bank Address');
     if (!customer) {
       return res
         .status(404)

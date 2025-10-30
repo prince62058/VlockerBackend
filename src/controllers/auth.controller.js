@@ -124,7 +124,7 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
     return res.status(200).json({
         success: true,
         data: {
-            isProfileCompleted: !user.isProfileCompleted,
+            isProfileCompleted: user.isProfileCompleted,
             userId: user.id,
             phone: user.phone,
             token

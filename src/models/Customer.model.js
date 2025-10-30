@@ -67,6 +67,23 @@ const customerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+customerSchema.virtual('Loan',{
+  ref: 'Loan',
+  localField: '_id',
+  foreignField: 'customerId',
+})
+customerSchema.virtual('Bank',{
+  ref: 'Bank',
+  localField: '_id',
+  foreignField: 'customerId',
+})
+customerSchema.virtual('Address',{
+  ref: 'Address',
+  localField: '_id',
+  foreignField: 'customerId',
+})
+customerSchema.set('toObject',{virtuals:true});
+customerSchema.set('toJSON',{virtuals:true});
 const Customer = mongoose.model("Customer", customerSchema);
 
 module.exports = Customer;

@@ -43,7 +43,7 @@ app.use("/api/feedback", feedbackRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
 
-app.use("/api/support", companySupportRoutes);
+app.use("/api/company", companySupportRoutes);
 app.get("/", (req, res) => {
   res.send("Welcome to V Locker App API");
 });
