@@ -9,6 +9,7 @@ const {
   completeAadhaarKYC,
   completePanKYC,
   addBankPassbook,
+  registerCustomer,
 } = require("../controllers/customer.controller");
 
 const authMiddleware = require("../middleware/auth.middleware.js");
@@ -30,6 +31,10 @@ router.post(
   "/send-otp",
   validateRequest(sendCustomerOtpSchema),
   sendCustomerOtp
+);
+router.post(
+  "/register",
+  registerCustomer
 );
 router.post(
   "/verify-and-create",

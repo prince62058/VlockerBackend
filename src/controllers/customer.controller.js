@@ -23,6 +23,47 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
   expiry.setMinutes(expiry.getMinutes() + minutes);
   return expiry;
 }
+const registerCustomer = async (req, res) => {
+  const { customerName, customerMobileNumber, address } = req.body;
+  try {
+    const existingVerifiedCustomer = await Customer.findOne({
+      customerMobileNumber,
+      createdBy: req.userId,
+
+    });
+    if (existingVerifiedCustomer) {
+      return res.status(400).json({
+        success: false,
+        message: "A customer with this mobile number already exist.",
+      });
+    }
+
+const customer=    await Customer.create(
+      {
+        customerName,
+        customerMobileNumber,
+        address,
+        createdBy: req.userId,
+        isVerified: false,
+      },
+
+    );
+    res.status(200).json({
+      success: true,
+      customer,
+      message: "user created successfully",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error Creating User",
+      error: error.message,
+    });
+  }
+
+}
+
 const sendCustomerOtp = async (req, res) => {
   const { customerName, customerMobileNumber, address } = req.body;
   // await Customer.collection.dropIndex('customerMobileNumber_1');
@@ -172,33 +213,33 @@ const getAllCustomers = async (req, res) => {
     //   .skip(skip)
     //   .limit(limit)
     //   .sort({ createdAt: -1 });
-  const customers = await Customer.aggregate([
-  { $match: filter },
-  {
-    $lookup: {
-      from: "loans",
-      localField: "_id",
-      foreignField: "customerId",
-      as: "Loan"
-    }
-  },
-  {
-    $addFields: {
-      activeLoans: {
-        $size: {
-          $filter: {
-            input: "$Loan",
-            as: "loan",
-            cond: { $eq: ["$$loan.loanStatus", "APPROVED"] }
+    const customers = await Customer.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "loans",
+          localField: "_id",
+          foreignField: "customerId",
+          as: "Loan"
+        }
+      },
+      {
+        $addFields: {
+          activeLoans: {
+            $size: {
+              $filter: {
+                input: "$Loan",
+                as: "loan",
+                cond: { $eq: ["$$loan.loanStatus", "APPROVED"] }
+              }
+            }
           }
         }
-      }
-    }
-  },
-  { $sort: { createdAt: -1 } },
-  { $skip: skip },
-  { $limit: limit }
-])
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ])
 
 
     const totalCustomers = await Customer.countDocuments(filter);
@@ -387,6 +428,11 @@ const addBankPassbook = async (req, res) => {
   }
 };
 
+
+
+
+
+
 module.exports = {
   sendCustomerOtp,
   verifyOtpAndCreateCustomer,
@@ -397,4 +443,5 @@ module.exports = {
   completeAadhaarKYC,
   completePanKYC,
   addBankPassbook,
+  registerCustomer
 };
