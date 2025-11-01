@@ -12,22 +12,25 @@ const customerLoan = require("./routes/CustomerLoan.routes");
 const feedbackRoutes = require("./routes/Feedback.routes");
 const InstallationVideoRoutes = require("./routes/InstallationVideo.routes");
 const companySupportRoutes = require("./routes/Company.routes");
-const homeRoutes=require('./routes/Home.routes')
+const homeRoutes = require("./routes/Home.routes");
+const contactusRoutes = require("./routes/ContactUs.routes");
+const stateRoutes = require("./routes/State.routes");
+const cityRoutes = require("./routes/City.routes");
 
 const app = express();
 const limiter = rateLimit({
-  windowMs: 15*60*1000,
+  windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again later.',
+  message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  handler:(req,res)=>{
+  handler: (req, res) => {
     res.status(429).json({
-      success:false,
-      message:'Too many requests from this IP, please try again later.'
-    })
-  }
-})
+      success: false,
+      message: "Too many requests from this IP, please try again later.",
+    });
+  },
+});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -41,7 +44,11 @@ app.use("/api/customerLoan", customerLoan);
 app.use("/api/address", addressRoutes);
 app.use("/api/bank", bankRoutes);
 app.use("/api/feedback", feedbackRoutes);
-app.use('/api/home',homeRoutes);
+app.use("/api/home", homeRoutes);
+app.use("/api/contactUs", contactusRoutes);
+
+app.use("/api/states", stateRoutes);
+app.use("/api/cities", cityRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
 
