@@ -88,7 +88,7 @@ const customerloanSchema = new mongoose.Schema(
    loanStatus: {
       type: String,
       enum: ["APPROVED", "PENDING", "REJECTED", "CLOSED"],
-      default: "APPROVED",
+      default: "PENDING",
     },
     deviceUnlockStatus: {
       type: String,

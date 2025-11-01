@@ -41,7 +41,7 @@ const createLoanSchema = Joi.object({
   numberOfEMIs: Joi.number().integer().min(1).optional(),
   interestRate: Joi.number().min(0).optional(),
   loanAmount: Joi.number().min(0).required(),
-  emiAmount: Joi.number().min(0).optional(),
+  // emiAmount: Joi.number().min(0).optional(),
   firstEmiDate: Joi.date().optional(),
   financer: Joi.string().valid("admin", "shop owner").required(),
   paymentOptions: Joi.string()
@@ -49,15 +49,15 @@ const createLoanSchema = Joi.object({
     .required(),
   description: Joi.string().allow("").optional(),
   autoUnlock: Joi.boolean().optional(),
-  emiStartDate: Joi.date().optional(),
-  emiEndDate: Joi.date().optional(),
+  // emiStartDate: Joi.date().optional(),
+  // emiEndDate: Joi.date().optional(),
   loanStatus: Joi.string()
     .valid("APPROVED", "PENDING", "REJECTED", "CLOSED")
-    .default("APPROVED"),
+    .default("PENDING"),
   deviceUnlockStatus: Joi.string()
     .valid("LOCKED", "UNLOCKED")
     .default("UNLOCKED"),
-  installments: Joi.array().items(installmentSchema).optional(),
+  // installments: Joi.array().items(installmentSchema).optional(),
 });
 
 const updateLoanSchema = Joi.object({

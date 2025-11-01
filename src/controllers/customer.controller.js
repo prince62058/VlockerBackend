@@ -207,7 +207,7 @@ const getAllCustomers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter = { createdBy: new mongoose.Types.ObjectId(req.userId), isVerified: true };
+    const filter = { createdBy: new mongoose.Types.ObjectId(req.userId) };
 
     // const customers = await Customer.find(filter)
     //   .skip(skip)
@@ -292,6 +292,7 @@ const getCustomerById = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
   try {
+     
     const customer = await Customer.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.userId },
       { $set: req.body },
