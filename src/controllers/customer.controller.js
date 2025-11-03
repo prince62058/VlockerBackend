@@ -206,8 +206,18 @@ const getAllCustomers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search=req.query.search || undefined;
 
     const filter = { createdBy: new mongoose.Types.ObjectId(req.userId) };
+    if(search){
+
+      filter.customerName={
+        $regex:search.trim(),
+        $options:'i'
+        
+      }
+    }
+    // console.log(filter)
 
     // const customers = await Customer.find(filter)
     //   .skip(skip)

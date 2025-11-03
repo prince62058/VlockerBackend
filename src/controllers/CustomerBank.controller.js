@@ -1,9 +1,8 @@
 const Bank = require("../models/CustomerBank.model");
-const Customer = require("../models/Customer.model");
-
+const User= require("../models/UserModel")
 const addBank = async (req, res) => {
   try {
-    const { customerId } = req.params;
+   const userId=req.userId;
     const { bankName, accountNumber, accountHolderName, ifscCode } = req.body;
 
     if (!bankName || !accountNumber || !accountHolderName || !ifscCode) {
@@ -12,15 +11,15 @@ const addBank = async (req, res) => {
         .json({ success: false, message: "All fields are required" });
     }
 
-    const customer = await Customer.findById(customerId);
-    if (!customer) {
+    const user = await User.findById(userId);
+    if (!user) {
       return res
         .status(404)
-        .json({ success: false, message: "Customer not found" });
+        .json({ success: false, message: "user not found" });
     }
 
     const bank = await Bank.create({
-      customerId,
+      userId,
       bankName,
       accountNumber,
       accountHolderName,

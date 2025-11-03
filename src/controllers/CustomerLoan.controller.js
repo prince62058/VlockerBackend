@@ -32,10 +32,17 @@ const generateInstallments = ({ numberOfEMIs, emiAmount, firstEmiDate, frequency
 };
 const calculateEMI = (principal, annualRate, numberOfEMIs) => {
   const monthlyRate = annualRate / 12 / 100;
+
+  if (monthlyRate === 0) {
+    return Math.round(principal / numberOfEMIs);
+  }
+
   const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfEMIs)) /
-    (Math.pow(1 + monthlyRate, numberOfEMIs) - 1);
+              (Math.pow(1 + monthlyRate, numberOfEMIs) - 1);
+
   return Math.round(emi);
 };
+
 
 const createCustomerloan = async (req, res) => {
   const { customerId } = req.params;
@@ -55,11 +62,18 @@ const createCustomerloan = async (req, res) => {
     const mobilePrice = req.body.mobilePrice || 0
     const interestRate = req.body.interestRate || 0;
     const numberOfEMIs = req.body.numberOfEMIs || 1
-    const firstEmiDate = new Date(req.body.firstEmiDate);
+    const financer=req.body.financer || 'admin'
+    const paymentOptions=req.body.paymentOptions || "upi"
+    
+    let firstEmiDate = new Date(req.body.firstEmiDate) 
+    if(isNaN(firstEmiDate)){
+      firstEmiDate=new Date()
+    }
 
     const loanAmount = mobilePrice - downPayment;
-    const frequency = req.body.frequency
+    const frequency = req.body.frequency || 'monthly'
     const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs)
+    console.log(loanAmount,interestRate,numberOfEMIs , emiAmount)
     const [installments, emiEndDate] = generateInstallments({
       numberOfEMIs,
       emiAmount,
@@ -70,6 +84,8 @@ const createCustomerloan = async (req, res) => {
     const loan = new Loan({
       ...req.body,
       installments,
+      financer,
+      paymentOptions,
       emiStartDate: firstEmiDate,
       emiEndDate: emiEndDate,
       customerId: customerId,
@@ -280,7 +296,7 @@ const getAllloans = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Customers Loan retrieved successfully",
-      data: loans,
+      data: loans[0]?.data,
       pagination,
     });
   } catch (error) {

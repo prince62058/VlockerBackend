@@ -19,7 +19,7 @@ const router = express.Router({ mergeParams: true });
 router.use(authMiddleware);
 
 router.post(
-  "/:customerId",
+  "/",
 
   validateRequest(addBankSchema, "body"),
   addBank
