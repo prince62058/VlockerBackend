@@ -6,6 +6,7 @@ const {
   updateUserProfile,
   updateBusinessProfile,
   getBusinesProfileByUserId,
+  toggleUser,
 } = require("../controllers/user.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -14,6 +15,7 @@ const {
   updateUserProfileSchema,
   paramIdSchema,
 } = require("../validations/userValidation");
+const { uploadImage } = require("../middleware/upload.middleware");
 
 const router = express.Router();
 
@@ -35,11 +37,12 @@ router.get("/", getAllUsers);
 router.put(
   "/",
   validateRequest(updateUserProfileSchema, "body"),
+  uploadImage.single('profileImage'),
   updateUserProfile
 );
-router.put('/businessProfile',updateBusinessProfile)
+router.put('/businessProfile',uploadImage.single('profileImage'), updateBusinessProfile)
 
 router.get("/businessProfile", getBusinesProfileByUserId);
 router.get("/:id", getUserById);
-
+router.patch('/disable/:userId',toggleUser)
 module.exports = router;

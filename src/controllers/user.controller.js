@@ -97,10 +97,10 @@ const getUserById = async (req, res) => {
 };
 const getBusinesProfileByUserId = async (req, res) => {
   try {
-    const userId=new mongoose.Types.ObjectId(req.userId)
- console.log(userId,"sadadasdasds")
+    const userId = new mongoose.Types.ObjectId(req.userId)
+    console.log(userId, "sadadasdasds")
     const user = await Business.findOne({
-      userId:userId
+      userId: userId
     })
     if (!user) {
       return res
@@ -119,16 +119,26 @@ const getBusinesProfileByUserId = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
   try {
-    const userId = req.userId;
+    let userId = undefined;
 
-    const { name, email,dateOfBirth,profileUrl } = req.body;
+    if (req.role == 'admin') {
+
+      const { userId: id } = req.query
+      userId = id;
+    }else{
+      userId=req.userId
+    }
+    // const userId = req.userId;
+    const profileUrl = req?.file?.location;
+
+    const { name, email, dateOfBirth } = req.body;
     const updateData = {};
-   
+
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
     if (profileUrl) updateData.profileUrl = profileUrl;
-    
+
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -143,7 +153,7 @@ const updateUserProfile = async (req, res) => {
     }
     res
       .status(200)
-      .json({ success: true, message: "Profile updated successfully", data:user });
+      .json({ success: true, message: "Profile updated successfully", data: user });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -154,22 +164,23 @@ const updateUserProfile = async (req, res) => {
 };
 const updateBusinessProfile = async (req, res) => {
   try {
+    console.log(req.file)
     const userId = req.userId;
 
-    const { name, email,phone , profileUrl } = req.body;
+    const { name, email, phone } = req.body;
     const updateData = {};
 
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
     if (userId) updateData.userId = userId;
-    if (profileUrl) updateData.profileUrl = profileUrl;
+    if (req?.file?.location) updateData.profileUrl = req.file.location;
 
 
     const user = await Business.findByIdAndUpdate(
       userId,
       { $set: updateData },
-      { new: true, runValidators: true  ,upsert:true}
+      { new: true, runValidators: true, upsert: true }
     )
 
     if (!user) {
@@ -179,7 +190,7 @@ const updateBusinessProfile = async (req, res) => {
     }
     res
       .status(200)
-      .json({ success: true, message: "Business profile updated successfully",data:user });
+      .json({ success: true, message: "Business profile updated successfully", data: user });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -188,6 +199,29 @@ const updateBusinessProfile = async (req, res) => {
     });
   }
 };
+const toggleUser = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.isDisabled = !user.isDisabled;
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `User ${user.isDisabled ? 'deactivated' : 'active'} successfully`,
+      user,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 
 module.exports = {
   completeProfile,
@@ -195,5 +229,6 @@ module.exports = {
   getUserById,
   updateUserProfile,
   updateBusinessProfile,
-  getBusinesProfileByUserId
+  getBusinesProfileByUserId,
+  toggleUser
 };
