@@ -12,11 +12,14 @@ const authMiddleware = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded)
+    // console.log(decoded)
     req.userId = decoded.userId;
-    if(decoded.role){
-      req.role=decoded.role
+    req.role = decoded.role;
+
+    if (req.role === 'admin' && req.query.userId) {
+      req.userId = req.query.userId;
     }
+
     next();
   } catch (error) {
     return res

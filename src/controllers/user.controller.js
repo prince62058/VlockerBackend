@@ -119,15 +119,9 @@ const getBusinesProfileByUserId = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
   try {
-    let userId = undefined;
+    let userId = req.userId;
 
-    if (req.role == 'admin') {
-
-      const { userId: id } = req.query
-      userId = id;
-    }else{
-      userId=req.userId
-    }
+ 
     // const userId = req.userId;
     const profileUrl = req?.file?.location;
 
