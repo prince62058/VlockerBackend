@@ -17,7 +17,7 @@ router.post(
     const upload = uploadVideo.fields([
       { name: "video", maxCount: 1 },
       { name: "thumbnail", maxCount: 1 },
-      { name: "channelImage", maxCount: 1 },
+      // { name: "channelImage", maxCount: 1 },
     ]);
     upload(req, res, (err) => {
       if (err) return res.status(400).json({ message: err.message });

@@ -74,16 +74,10 @@ const createCustomerloan = async (req, res) => {
     }
  
     const loanAmount = req.body?.loanAmount;
-    console.log(loanAmount)
-    console.log("this runs",req.body.frequency.length)
     let frequency = req.body?.frequency || 'monthly'
-    console.log(frequency.length)
-    if(frequency.length==0){
-      frequency='monthly'
-      console.log("this run2")
-
-    }
+    
     const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs)
+    console.log(req.body,emiAmount)
     console.log(loanAmount,interestRate,numberOfEMIs , emiAmount)
     const [installments, emiEndDate] = generateInstallments({
       numberOfEMIs,
@@ -97,6 +91,7 @@ const createCustomerloan = async (req, res) => {
       installments,
       financer,
       paymentOptions,
+      emiAmount,
       emiStartDate: firstEmiDate,
       emiEndDate: emiEndDate,
       customerId: customerId,
