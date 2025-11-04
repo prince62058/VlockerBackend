@@ -23,6 +23,127 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
   expiry.setMinutes(expiry.getMinutes() + minutes);
   return expiry;
 }
+const registerAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const existingAdmin = await User.findOne({ email: email.toLowerCase() });
+    if (existingAdmin) {
+      return res.status(409).json({
+        success: false,
+        message: 'Admin with this email already exists'
+      });
+    }
+
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const newAdmin = await User.create({
+     
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role: 'admin'
+    });
+    const tokenPayload = {
+      userId: newAdmin._id,
+      role: newAdmin.role
+
+    };
+
+    const token = jwt.sign(tokenPayload, JWT_SECRET);
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin registered successfully',
+      data: {
+        id: newAdmin._id,
+      
+        email: newAdmin.email,
+        token
+      }
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during registration',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+const loginAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // if (!email || !password) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Please provide email and password'
+    //   });
+    // }
+
+    const admin = await User.findOne({
+      email: email.toLowerCase()
+    }).select('+password');
+
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    if (admin.isDisabled === true) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account has been deactivated'
+      });
+    }
+
+    const tokenPayload = {
+      userId: admin._id,
+      role: admin.role
+
+    };
+
+    const token = jwt.sign(tokenPayload, JWT_SECRET);
+
+
+    await admin.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+         
+          id: admin._id,
+          name: admin.name,
+          email: admin.email,
+        
+        token
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 const sendOtp = async (req, res) => {
   try {
     const { phone } = req.body;
@@ -137,6 +258,7 @@ const verifyOtp = async (req, res) => {
   await user.save();
   const tokenPayload = {
     userId: user.id,
+
   };
 
   const token = jwt.sign(tokenPayload, JWT_SECRET);
@@ -152,6 +274,9 @@ const verifyOtp = async (req, res) => {
   });
 };
 module.exports = {
+  loginAdmin,
   sendOtp,
   verifyOtp,
+  registerAdmin,
+  loginAdmin
 };

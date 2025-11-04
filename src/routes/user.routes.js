@@ -4,6 +4,8 @@ const {
   getAllUsers,
   getUserById,
   updateUserProfile,
+  updateBusinessProfile,
+  getBusinesProfileByUserId,
 } = require("../controllers/user.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -35,7 +37,9 @@ router.put(
   validateRequest(updateUserProfileSchema, "body"),
   updateUserProfile
 );
+router.put('/businessProfile',updateBusinessProfile)
 
+router.get("/businessProfile", getBusinesProfileByUserId);
 router.get("/:id", getUserById);
 
 module.exports = router;

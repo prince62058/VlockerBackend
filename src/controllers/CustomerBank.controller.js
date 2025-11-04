@@ -40,8 +40,8 @@ const addBank = async (req, res) => {
 
 const getBanksByCustomer = async (req, res) => {
   try {
-    const { customerId } = req.params;
-    const banks = await Bank.find({ customerId });
+    const userId = req.userId;
+    const banks = await Bank.find({ userId });
 
     res.status(200).json({
       success: true,

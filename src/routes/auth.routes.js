@@ -1,5 +1,5 @@
 const express = require("express");
-const { sendOtp, verifyOtp } = require("../controllers/auth.controller");
+const { sendOtp, verifyOtp,   loginAdmin, registerAdmin } = require("../controllers/auth.controller");
 const {
   sendOtpSchema,
   verifyOtpSchema,
@@ -7,6 +7,8 @@ const {
 const router = express.Router();
 const validateRequest = require("../middleware/validateRequest");
 
+router.post('/register',registerAdmin)
+router.get('/login',loginAdmin)
 router.post("/send-otp", validateRequest(sendOtpSchema), sendOtp);
 router.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtp);
 

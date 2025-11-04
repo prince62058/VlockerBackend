@@ -4,7 +4,6 @@ const userSchema = new mongoose.Schema(
   {
     phone: {
       type: String,
-      required: true,
       unique: true,
     },
     phoneOtp: {
@@ -40,6 +39,30 @@ const userSchema = new mongoose.Schema(
       sparse: true,
       default: null,
     },
+    dateOfBirth: {
+      type: Date
+    },
+    profileUrl: {
+      type: String,
+      trim: true
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
+    },
+    email: {
+      type: String,
+      lowercase: true,
+      trim: true
+    },
+    password: {
+      type: String
+    },
+    isDisabled:{
+      type:Boolean,
+      default:false
+    }
   },
   { timestamps: true }
 );

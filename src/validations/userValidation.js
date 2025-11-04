@@ -14,7 +14,9 @@ const completeProfileSchema = Joi.object({
 const updateUserProfileSchema = Joi.object({
   name: Joi.string().trim().min(2).max(50).optional(),
   email: Joi.string().trim().email().optional(),
-}).or("name", "email");
+  dateOfBirth:Joi.date().iso(),
+  profileUrl:Joi.string().uri().optional()
+}).or("name", "email","dateOfBirth");
 
 const paramIdSchema = Joi.object({
   id: Joi.string()

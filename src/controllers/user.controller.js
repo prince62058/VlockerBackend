@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const User = require("../models/UserModel.js");
+const Business = require("../models/BusinessProfile.js");
 
 const completeProfile = async (req, res) => {
   const { name, email } = req.body;
@@ -94,16 +95,40 @@ const getUserById = async (req, res) => {
     });
   }
 };
+const getBusinesProfileByUserId = async (req, res) => {
+  try {
+    const userId=new mongoose.Types.ObjectId(req.userId)
+ console.log(userId,"sadadasdasds")
+    const user = await Business.findOne({
+      userId:userId
+    })
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Business profile not found" });
+    }
+    res.status(200).json({ success: true, message: "Business profile  found", data: user });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error finding user",
+      error: error.message,
+    });
+  }
+};
 
 const updateUserProfile = async (req, res) => {
   try {
     const userId = req.userId;
 
-    const { name, email } = req.body;
+    const { name, email,dateOfBirth,profileUrl } = req.body;
     const updateData = {};
-
+   
     if (name) updateData.name = name;
     if (email) updateData.email = email;
+    if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
+    if (profileUrl) updateData.profileUrl = profileUrl;
+    
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -118,11 +143,47 @@ const updateUserProfile = async (req, res) => {
     }
     res
       .status(200)
-      .json({ success: true, message: "Profile updated successfully", user });
+      .json({ success: true, message: "Profile updated successfully", data:user });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: "Error updating profile",
+      error: error.message,
+    });
+  }
+};
+const updateBusinessProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const { name, email,phone , profileUrl } = req.body;
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (userId) updateData.userId = userId;
+    if (profileUrl) updateData.profileUrl = profileUrl;
+
+
+    const user = await Business.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true  ,upsert:true}
+    )
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    res
+      .status(200)
+      .json({ success: true, message: "Business profile updated successfully",data:user });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Error updating Business profile",
       error: error.message,
     });
   }
@@ -133,4 +194,6 @@ module.exports = {
   getAllUsers,
   getUserById,
   updateUserProfile,
+  updateBusinessProfile,
+  getBusinesProfileByUserId
 };
