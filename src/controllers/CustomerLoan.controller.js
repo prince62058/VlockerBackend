@@ -11,9 +11,9 @@ const generateInstallments = ({ numberOfEMIs, emiAmount, firstEmiDate, frequency
       installmentNumber: i,
       dueDate: new Date(currentDate),
       amount: emiAmount,
-      status: "PENDING",
+      status: emiAmount==0?"PAID":"PENDING",
       paidAmount: 0,
-      paidDate: null,
+      paidDate: emiAmount==0?new Date():null,
       paymentMethod: null,
       lateFee: 0,
       remarks: null
@@ -59,9 +59,10 @@ const createCustomerloan = async (req, res) => {
       });
     }
     const downPayment = req.body.downPayment || 0;
-    const mobilePrice = req.body.mobilePrice || 0
+    const mobilePrice = req.body.mobilePrice || 0;
+    const processingFees = req.body.processingFees || 0;
     const interestRate = req.body.interestRate || 0;
-    const numberOfEMIs = req.body.numberOfEMIs || 1
+    const numberOfEMIs = req.body.numberOfEMIs || 1;
     const financer=req.body.financer || 'admin'
     const paymentOptions=req.body.paymentOptions || "upi"
     
@@ -69,8 +70,9 @@ const createCustomerloan = async (req, res) => {
     if(isNaN(firstEmiDate)){
       firstEmiDate=new Date()
     }
-
-    const loanAmount = mobilePrice - downPayment;
+ 
+ 
+    const loanAmount = req.body.loanAmount;
     const frequency = req.body.frequency || 'monthly'
     const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs)
     console.log(loanAmount,interestRate,numberOfEMIs , emiAmount)
