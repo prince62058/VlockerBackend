@@ -37,10 +37,10 @@ router.get("/", getAllUsers);
 router.put(
   "/",
   validateRequest(updateUserProfileSchema, "body"),
-  uploadImage.single('profileImage'),
+  uploadImage.single('profileUrl'),
   updateUserProfile
 );
-router.put('/businessProfile',uploadImage.single('profileImage'), updateBusinessProfile)
+router.put('/businessProfile',uploadImage.single('profileUrl'), updateBusinessProfile)
 
 router.get("/businessProfile", getBusinesProfileByUserId);
 router.get("/:id", getUserById);

@@ -2,8 +2,7 @@ const InstallationVideo = require("../models/InstallationVideo.model.js");
 
 const createInstallationVideo = async (req, res) => {
   try {
-    const { title, description, channelName } = req.body;
-
+    const { title, description, channelName, youtubeLink } = req.body;
     if (!title) {
       return res
         .status(400)
@@ -15,19 +14,21 @@ const createInstallationVideo = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Please upload a video file" });
     }
-
+  console.log("inside contrller")
     const videoFile = req.files.video[0];
     const thumbnailFile = req.files.thumbnail ? req.files.thumbnail[0] : null;
-
     const videoPath = videoFile.location;
     const thumbnailPath = thumbnailFile ? thumbnailFile.location : null;
+    const channelImage = req.files?.channelImage?.[0];
 
     const newVideo = new InstallationVideo({
       title,
       description,
       channelName,
+      channelImage,
       videoPath,
       thumbnail: thumbnailPath,
+      youtubeLink,
       createdBy: req.userId || null,
     });
 

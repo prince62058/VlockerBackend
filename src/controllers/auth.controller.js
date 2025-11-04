@@ -26,6 +26,7 @@ function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
 const registerAdmin = async (req, res) => {
   try {
 
+
     const { email, password } = req.body;
 
     const existingAdmin = await User.findOne({ email: email.toLowerCase() });

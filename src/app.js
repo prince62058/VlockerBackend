@@ -56,6 +56,7 @@ app.use("/api/mobile-brands", mobileBrandRoutes);
 app.use("/api/mobile-models", mobileModelRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
+app.set("trust proxy", true);
 
 app.use("/api/company", companySupportRoutes);
 app.get("/", (req, res) => {

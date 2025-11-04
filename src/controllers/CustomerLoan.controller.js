@@ -58,22 +58,31 @@ const createCustomerloan = async (req, res) => {
         message: "Customer not found or you are not authorized",
       });
     }
-    const downPayment = req.body.downPayment || 0;
-    const mobilePrice = req.body.mobilePrice || 0;
-    const processingFees = req.body.processingFees || 0;
-    const interestRate = req.body.interestRate || 0;
-    const numberOfEMIs = req.body.numberOfEMIs || 1;
-    const financer=req.body.financer || 'admin'
-    const paymentOptions=req.body.paymentOptions || "upi"
+    console.log(req.body)
+    const downPayment = req.body?.downPayment || 0;
+    console.log(downPayment)
+    const mobilePrice = req.body?.mobilePrice || 0;
+    const processingFees = req.body?.processingFees || 0;
+    const interestRate = req.body?.interestRate || 0;
+    const numberOfEMIs = req.body?.numberOfEMIs || 1;
+    const financer=req.body?.financer || 'admin'
+    const paymentOptions=req.body?.paymentOptions || "upi"
     
-    let firstEmiDate = new Date(req.body.firstEmiDate) 
+    let firstEmiDate = new Date(req.body?.firstEmiDate) 
     if(isNaN(firstEmiDate)){
       firstEmiDate=new Date()
     }
  
- 
-    const loanAmount = req.body.loanAmount;
-    const frequency = req.body.frequency || 'monthly'
+    const loanAmount = req.body?.loanAmount;
+    console.log(loanAmount)
+    console.log("this runs",req.body.frequency.length)
+    let frequency = req.body?.frequency || 'monthly'
+    console.log(frequency.length)
+    if(frequency.length==0){
+      frequency='monthly'
+      console.log("this run2")
+
+    }
     const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs)
     console.log(loanAmount,interestRate,numberOfEMIs , emiAmount)
     const [installments, emiEndDate] = generateInstallments({

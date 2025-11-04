@@ -37,15 +37,19 @@ const createLoanSchema = Joi.object({
   downPayment: Joi.number().min(0).optional(),
   frequency: Joi.string()
     .valid("monthly", "weekly", "daily")
-    .default("monthly"),
+    .empty('').
+    default("monthly"),
   numberOfEMIs: Joi.number().integer().min(1).optional(),
   interestRate: Joi.number().min(0).optional(),
   loanAmount: Joi.number().min(0).required(),
   // emiAmount: Joi.number().min(0).optional(),
-  firstEmiDate: Joi.date().optional(),
+firstEmiDate: Joi.date().optional().empty(''),
+
   financer: Joi.string().valid("admin", "shop owner"),
-  paymentOptions: Joi.string()
-    .valid("cash", "upi", "autopay/autodebit"),
+  paymentOptions: Joi.string().
+    empty('')
+    .valid("cash", "upi", "autopay/autodebit").
+     default("upi"),
   description: Joi.string().allow("").optional(),
   autoUnlock: Joi.boolean().optional(),
   // emiStartDate: Joi.date().optional(),
