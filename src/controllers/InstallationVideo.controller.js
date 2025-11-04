@@ -66,4 +66,84 @@ const getAllInstallationVideos = async (req, res) => {
   }
 };
 
-module.exports = { createInstallationVideo, getAllInstallationVideos };
+const updateInstallationVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, channelName } = req.body;
+
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (channelName) updateData.channelName = channelName;
+
+    // If video re-uploaded
+    if (req.files?.video) {
+      updateData.videoPath = req.files.video[0].location;
+    }
+
+    // If thumbnail re-uploaded
+    if (req.files?.thumbnail) {
+      updateData.thumbnail = req.files.thumbnail[0].location;
+    }
+
+    const updatedVideo = await InstallationVideo.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedVideo) {
+      return res.status(404).json({
+        success: false,
+        message: "Installation video not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Video updated successfully",
+      data: updatedVideo,
+    });
+  } catch (error) {
+    console.error("Error updating video:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+const deleteInstallationVideo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const video = await InstallationVideo.findByIdAndDelete(id);
+
+    if (!video) {
+      return res.status(404).json({
+        success: false,
+        message: "Installation video not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Video deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting video:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  createInstallationVideo,
+  getAllInstallationVideos,
+  updateInstallationVideo,
+  deleteInstallationVideo,
+};
