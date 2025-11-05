@@ -121,7 +121,6 @@ const loginAdmin = async (req, res) => {
     const token = jwt.sign(tokenPayload, JWT_SECRET);
 
 
-    await admin.save();
 
     res.status(200).json({
       success: true,

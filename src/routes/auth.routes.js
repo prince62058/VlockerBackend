@@ -8,7 +8,7 @@ const router = express.Router();
 const validateRequest = require("../middleware/validateRequest");
 
 router.post('/register',registerAdmin)
-router.get('/login',loginAdmin)
+router.post('/login',loginAdmin)
 router.post("/send-otp", validateRequest(sendOtpSchema), sendOtp);
 router.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtp);
 

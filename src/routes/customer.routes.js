@@ -44,7 +44,7 @@ router.post(
 
 router.get("/", getAllCustomers);
 router.get("/:id", getCustomerById);
-router.put("/:id", validateRequest(updateCustomerSchema), updateCustomer);
+router.put("/:id", validateRequest(updateCustomerSchema),uploadImage.single('profileUrl'), updateCustomer);
 router.delete("/:id", deleteCustomer);
 
 router.put(

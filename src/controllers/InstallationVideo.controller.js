@@ -20,12 +20,12 @@ const createInstallationVideo = async (req, res) => {
     const videoPath = videoFile.location;
     const thumbnailPath = thumbnailFile ? thumbnailFile.location : null;
     const channelImage = req.files?.channelImage?.[0];
-
+   const  imageLocation=channelImage?.location || null
     const newVideo = new InstallationVideo({
       title,
       description,
       channelName,
-      channelImage,
+      channelImage:imageLocation,
       videoPath,
       thumbnail: thumbnailPath,
       youtubeLink,
