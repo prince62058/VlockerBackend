@@ -4,12 +4,11 @@ const installationVideoSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: true,
       trim: true,
     },
-    youtubeLink:{
-      type:String,
-      trim:true
+    youtubeLink: {
+      type: String,
+      trim: true,
     },
     description: {
       type: String,
@@ -20,7 +19,7 @@ const installationVideoSchema = new mongoose.Schema(
       required: true,
     },
     thumbnail: {
-      type: String,  
+      type: String,
       required: false,
     },
     channelName: {

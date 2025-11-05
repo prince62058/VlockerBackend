@@ -40,34 +40,41 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     dateOfBirth: {
-      type: Date
+      type: Date,
     },
     profileUrl: {
       type: String,
-      trim: true
+      trim: true,
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user'
+      enum: ["user", "admin"],
+      default: "user",
     },
     email: {
       type: String,
       lowercase: true,
-      trim: true
+      trim: true,
     },
     password: {
-      type: String
+      type: String,
     },
-    isDisabled:{
-      type:Boolean,
-      default:false
-    }
+    isDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
-const User = mongoose.model("User", userSchema);
+userSchema.virtual("BusinessProfile", {
+  ref: "BusinessProfile",
+  localField: "_id",
+  foreignField: "userId",
+});
+userSchema.set("toObject", { virtuals: true });
+userSchema.set("toJSON", { virtuals: true });
 
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;
