@@ -84,6 +84,7 @@ customerSchema.virtual('Address',{
   ref: 'Address',
   localField: '_id',
   foreignField: 'customerId',
+  justOne: true
 })
 customerSchema.set('toObject',{virtuals:true});
 customerSchema.set('toJSON',{virtuals:true});
