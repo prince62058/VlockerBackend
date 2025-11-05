@@ -47,6 +47,10 @@ const customerSchema = new mongoose.Schema(
       type: Boolean,
       default: false,  
     },
+    profileUrl:{
+      type:String,
+      trim:true
+    },
 
     kyc: {
       aadhaar: {

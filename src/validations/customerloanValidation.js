@@ -88,7 +88,7 @@ const updateLoanSchema = Joi.object({
   numberOfEMIs: Joi.number().integer().min(1),
   interestRate: Joi.number().min(0),
   loanAmount: Joi.number().min(0),
-  // emiAmount: Joi.number().min(0),
+  emiAmount: Joi.number().min(0),
   firstEmiDate: Joi.date(),
   financer: Joi.string().valid("admin", "shop owner"),
   paymentOptions: Joi.string().valid("cash", "upi", "autopay/autodebit"),

@@ -38,7 +38,7 @@ const registerCustomer = async (req, res) => {
       });
     }
 
-const customer=    await Customer.create(
+    const customer = await Customer.create(
       {
         customerName,
         customerMobileNumber,
@@ -206,15 +206,15 @@ const getAllCustomers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const search=req.query.search || undefined;
+    const search = req.query.search || undefined;
 
     const filter = { createdBy: new mongoose.Types.ObjectId(req.userId) };
-    if(search){
+    if (search) {
 
-      filter.customerName={
-        $regex:search.trim(),
-        $options:'i'
-        
+      filter.customerName = {
+        $regex: search.trim(),
+        $options: 'i'
+
       }
     }
     // console.log(filter)
@@ -302,10 +302,15 @@ const getCustomerById = async (req, res) => {
 
 const updateCustomer = async (req, res) => {
   try {
-     
+    const profileUrl = req?.file?.location;
+    const updateData = { ...req.body };
+
+    if (profileUrl !== undefined) {
+      updateData.profileUrl = profileUrl;
+    }
     const customer = await Customer.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.userId },
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
@@ -364,23 +369,23 @@ const completeAadhaarKYC = async (req, res) => {
       ? req.files["aadhaarBack"][0].location
       : null;
 
-    if (!aadhaarNumber || !aadhaarFront || !aadhaarBack) {
-      return res
-        .status(400)
-        .json({ success: false, message: "All Aadhaar fields are required" });
-    }
+    // if (!aadhaarNumber || !aadhaarFront || !aadhaarBack) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "All Aadhaar fields are required" });
+    // }
+    const updateData = {}
+
+    if (aadhaarNumber) updateData["kyc.aadhaar.number"] = aadhaarNumber
+    if (aadhaarFront) updateData["kyc.aadhaar.frontPhoto"] = aadhaarFront
+    if (aadhaarBack) updateData["kyc.aadhaar.backPhoto"] = aadhaarBack
 
     const updatedCustomer = await Customer.findByIdAndUpdate(
       customerId,
-      {
-        "kyc.aadhaar.number": aadhaarNumber,
-        "kyc.aadhaar.frontPhoto": aadhaarFront,
-        "kyc.aadhaar.backPhoto": aadhaarBack,
-      },
+      updateData,
       { new: true }
     );
 
-    console.log(updatedCustomer);
     res.status(200).json({ success: true, data: updatedCustomer });
   } catch (error) {
     console.error(error);
@@ -393,22 +398,24 @@ const completePanKYC = async (req, res) => {
     const { panNumber } = req.body;
     const panPhoto = req.file ? req.file.location : null;
 
-    if (!panNumber || !panPhoto) {
-      return res
-        .status(400)
-        .json({ success: false, message: "PAN number and photo are required" });
-    }
+    // if (!panNumber || !panPhoto) {
+    //   return res
+    //     .status(400)
+    //     .json({ success: false, message: "PAN number and photo are required" });
+    // }
+
+    const updateData = {}
+
+    if (panNumber) updateData["kyc.pan.number"] = panNumber
+    if (panPhoto) updateData["kyc.pan.photo"] = panPhoto
 
     const updatedCustomer = await Customer.findByIdAndUpdate(
       customerId,
-      {
-        "kyc.pan.number": panNumber,
-        "kyc.pan.photo": panPhoto,
-      },
+      updateData,
       { new: true }
     );
 
-    res.status(200).json(updatedCustomer);
+    res.status(200).json({ data: updatedCustomer });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });

@@ -35,6 +35,9 @@ const installationVideoSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    channelImage:{
+      type:String
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
