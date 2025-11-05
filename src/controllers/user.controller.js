@@ -50,7 +50,8 @@ const getAllUsers = async (req, res) => {
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
-      .select("-phoneOtp.attempts -phoneOtp.codeHash");
+      .select("-phoneOtp.attempts -phoneOtp.codeHash")
+      .populate("BusinessProfile");
 
     const totalUsers = await User.countDocuments();
     const totalPages = Math.ceil(totalUsers / limit);
@@ -78,9 +79,9 @@ const getAllUsers = async (req, res) => {
 
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select(
-      "-phoneOtp.attempts -phoneOtp.codeHash"
-    );
+    const user = await User.findById(req.params.id)
+      .select("-phoneOtp.attempts -phoneOtp.codeHash")
+      .populate("BusinessProfile");
     if (!user) {
       return res
         .status(404)
@@ -97,17 +98,19 @@ const getUserById = async (req, res) => {
 };
 const getBusinesProfileByUserId = async (req, res) => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.userId)
-    console.log(userId, "sadadasdasds")
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    console.log(userId, "sadadasdasds");
     const user = await Business.findOne({
-      userId: userId
-    })
+      userId: userId,
+    });
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "Business profile not found" });
     }
-    res.status(200).json({ success: true, message: "Business profile  found", data: user });
+    res
+      .status(200)
+      .json({ success: true, message: "Business profile  found", data: user });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -121,7 +124,6 @@ const updateUserProfile = async (req, res) => {
   try {
     let userId = req.userId;
 
- 
     // const userId = req.userId;
     const profileUrl = req?.file?.location;
 
@@ -132,7 +134,6 @@ const updateUserProfile = async (req, res) => {
     if (email) updateData.email = email;
     if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
     if (profileUrl) updateData.profileUrl = profileUrl;
-
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -145,9 +146,11 @@ const updateUserProfile = async (req, res) => {
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    res
-      .status(200)
-      .json({ success: true, message: "Profile updated successfully", data: user });
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user,
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -158,7 +161,7 @@ const updateUserProfile = async (req, res) => {
 };
 const updateBusinessProfile = async (req, res) => {
   try {
-    console.log(req.file)
+    console.log(req.file);
     const userId = req.userId;
 
     const { name, email, phone } = req.body;
@@ -170,21 +173,22 @@ const updateBusinessProfile = async (req, res) => {
     if (userId) updateData.userId = userId;
     if (req?.file?.location) updateData.profileUrl = req.file.location;
 
-
     const user = await Business.findByIdAndUpdate(
       userId,
       { $set: updateData },
       { new: true, runValidators: true, upsert: true }
-    )
+    );
 
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
     }
-    res
-      .status(200)
-      .json({ success: true, message: "Business profile updated successfully", data: user });
+    res.status(200).json({
+      success: true,
+      message: "Business profile updated successfully",
+      data: user,
+    });
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -199,7 +203,9 @@ const toggleUser = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.isDisabled = !user.isDisabled;
@@ -208,14 +214,15 @@ const toggleUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: `User ${user.isDisabled ? 'deactivated' : 'active'} successfully`,
+      message: `User ${
+        user.isDisabled ? "deactivated" : "active"
+      } successfully`,
       user,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
 module.exports = {
   completeProfile,
@@ -224,5 +231,5 @@ module.exports = {
   updateUserProfile,
   updateBusinessProfile,
   getBusinesProfileByUserId,
-  toggleUser
+  toggleUser,
 };
