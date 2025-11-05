@@ -34,7 +34,7 @@ router.get(
 );
 
 router.put(
-  "/:addressId",
+  "/:customerId",
 
   validateRequest(updateAddressSchema, "body"),
   updateAddress

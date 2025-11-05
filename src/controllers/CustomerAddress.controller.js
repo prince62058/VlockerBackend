@@ -45,7 +45,7 @@ const getAddressesForCustomer = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Addresses retrieved successfully",
-      addresses,
+      data:addresses,
     });
   } catch (error) {
     res.status(500).json({
@@ -67,7 +67,7 @@ const getAddressById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Address not found" });
     }
-    res.status(200).json({ success: true, message: "Address found", address });
+    res.status(200).json({ success: true, message: "Address found", data:address });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -79,13 +79,16 @@ const getAddressById = async (req, res) => {
 
 const updateAddress = async (req, res) => {
   try {
+    const customerId=req.params.customerId
+    const updateData={...req.body};
+    updateData.customerId=customerId;
     const address = await Address.findOneAndUpdate(
       {
-        _id: req.params.addressId,
+        customerId:customerId,
         createdBy: req.userId,
       },
-      { $set: req.body },
-      { new: true, runValidators: true }
+      { $set: updateData },
+      { new: true, runValidators: true ,upsert:true}
     );
     if (!address) {
       return res.status(404).json({
@@ -96,7 +99,7 @@ const updateAddress = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Address updated successfully",
-      address,
+      data:address,
     });
   } catch (error) {
     res.status(400).json({
