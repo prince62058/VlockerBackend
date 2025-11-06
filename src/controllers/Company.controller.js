@@ -27,10 +27,8 @@ const updateSupportInfo = async (req, res) => {
     const updateData = { ...req.body };
     for (const field_name in req.files) {
       const files = req.files[field_name]
-       updateData.field_name=files.location
-       console.log(files.location)
+       updateData[field_name]=files[0]?.location
     }
-
 
 
 
