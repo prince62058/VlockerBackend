@@ -26,7 +26,7 @@ const customerloanSchema = new mongoose.Schema(
     },
     imeiNumber1: {
       type: String,
-      unique: true, 
+      unique: true,
     },
     imeiNumber2: {
       type: String,
@@ -85,7 +85,7 @@ const customerloanSchema = new mongoose.Schema(
     emiEndDate: {
       type: Date,
     },
-   loanStatus: {
+    loanStatus: {
       type: String,
       enum: ["APPROVED", "PENDING", "REJECTED", "CLOSED"],
       default: "PENDING",
@@ -93,14 +93,14 @@ const customerloanSchema = new mongoose.Schema(
     deviceUnlockStatus: {
       type: String,
       enum: ["LOCKED", "UNLOCKED"],
-      default: "UNLOCKED", 
+      default: "UNLOCKED",
 
     },
     installments: [
       {
         installmentNumber: {
           type: Number,
-     
+
         },
         dueDate: {
           type: Date,
@@ -137,6 +137,27 @@ const customerloanSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+customerloanSchema.pre('save', async function (next) {
+  try {
+    const userId = this.createdBy
+
+    if (!userId) {
+      console.log("No createdBy on this doc")
+      return next()
+    }
+
+    await mongoose.model('User').findOneAndUpdate(
+      { _id: userId },
+      { $inc: { keys: -1 } },
+      { new: true }
+    )
+
+    next()
+  } catch (err) {
+    next(err)
+  }
+})
 
 const Loan = mongoose.model("Loan", customerloanSchema);
 

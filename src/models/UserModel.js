@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    keys: {
+      type: Number,
+      default: 0
+
+    },
     email: {
       type: String,
       lowercase: true,
