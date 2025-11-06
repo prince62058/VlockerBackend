@@ -24,7 +24,17 @@ const createSupportInfo = async (req, res) => {
 
 const updateSupportInfo = async (req, res) => {
   try {
-    const updated = await Company.findOneAndUpdate({}, req.body, {
+    const updateData = { ...req.body };
+    for (const field_name in req.files) {
+      const files = req.files[field_name]
+       updateData.field_name=files.location
+       console.log(files.location)
+    }
+
+
+
+
+    const updated = await Company.findOneAndUpdate({}, updateData, {
       new: true,
     });
     if (!updated) {

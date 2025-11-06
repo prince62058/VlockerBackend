@@ -18,6 +18,8 @@ const stateRoutes = require("./routes/State.routes");
 const cityRoutes = require("./routes/City.routes");
 const mobileBrandRoutes = require("./routes/MobileBrand.routes");
 const mobileModelRoutes = require("./routes/MobileModel.routes");
+const  keysRoutes=require('./routes/keys.routes')
+
 
 const app = express();
 const limiter = rateLimit({
@@ -56,7 +58,8 @@ app.use("/api/mobile-brands", mobileBrandRoutes);
 app.use("/api/mobile-models", mobileModelRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
-app.set("trust proxy", true);
+app.use("/api/keys", keysRoutes);
+// app.set("trust proxy", true);
 
 app.use("/api/company", companySupportRoutes);
 app.get("/", (req, res) => {

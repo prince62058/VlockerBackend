@@ -1,5 +1,6 @@
 const Loan = require("../models/CustomerLoan.model");
 const Customer = require("../models/Customer.model");
+const User = require("../models/UserModel");
 const { default: mongoose } = require("mongoose");
 
 const generateInstallments = ({ numberOfEMIs, emiAmount, firstEmiDate, frequency }) => {
@@ -47,20 +48,26 @@ const calculateEMI = (principal, annualRate, numberOfEMIs) => {
 const createCustomerloan = async (req, res) => {
   const { customerId } = req.params;
   try {
-    console.log("Creating loan for customerId:", customerId);
     const customer = await Customer.findOne({
       _id: customerId,
       createdBy: req.userId,
     });
+    const keysExist=await User.findById(req.userId);
+
+    if(keysExist?.keys<=0){
+       return res.status(400).json({
+        success: false,
+        message: "request keys to create loan",
+      });
+
+    }
     if (!customer) {
       return res.status(404).json({
         success: false,
         message: "Customer not found or you are not authorized",
       });
     }
-    console.log(req.body)
     const downPayment = req.body?.downPayment || 0;
-    console.log(downPayment)
     const mobilePrice = req.body?.mobilePrice || 0;
     const processingFees = req.body?.processingFees || 0;
     const interestRate = req.body?.interestRate || 0;
