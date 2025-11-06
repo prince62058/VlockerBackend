@@ -7,6 +7,7 @@ const {
   updateBusinessProfile,
   getBusinesProfileByUserId,
   toggleUser,
+  saveFcmToken,
 } = require("../controllers/user.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const validateRequest = require("../middleware/validateRequest");
@@ -44,5 +45,6 @@ router.put('/businessProfile',uploadImage.single('profileUrl'), updateBusinessPr
 
 router.get("/businessProfile", getBusinesProfileByUserId);
 router.get("/:id", getUserById);
+router.post("/saveFcmToken",saveFcmToken );
 router.patch('/disable/:userId',toggleUser)
 module.exports = router;

@@ -224,6 +224,21 @@ const toggleUser = async (req, res) => {
   }
 };
 
+const saveFcmToken = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { pushNotificationToken } = req.body;
+    if (!pushNotificationToken || !userId) {
+      return res.status(200).json({ error: 'Token and userId are required' });
+    }
+    await User.findByIdAndUpdate(userId, { pushNotificationToken: pushNotificationToken });
+    // await admin.messaging().subscribeToTopic([token], 'allUsers');
+    return res.json({ success: true, message: 'Token registered successfully' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};
+
 module.exports = {
   completeProfile,
   getAllUsers,
@@ -232,4 +247,5 @@ module.exports = {
   updateBusinessProfile,
   getBusinesProfileByUserId,
   toggleUser,
+  saveFcmToken
 };

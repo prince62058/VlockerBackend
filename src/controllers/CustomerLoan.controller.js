@@ -141,7 +141,7 @@ const getAllCustomersloan = async (req, res) => {
     const loans = await Loan.find(filter)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 }).populate("customerId");
 
     const totalLoans = await Loan.countDocuments(filter);
 
@@ -263,6 +263,7 @@ const getAllloans = async (req, res) => {
           as: "customerId"
         }
       },
+      {$unwind:'$customerId'},
       {
         $addFields: {
           installmentsPaid: {

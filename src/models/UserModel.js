@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+        pushNotificationToken: { type: String },
   },
   { timestamps: true }
 );
