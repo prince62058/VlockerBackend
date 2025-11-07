@@ -11,8 +11,42 @@ exports.createCity = async (req, res) => {
   }
 };
 
+// exports.getAllCities = async (req, res) => {
+//   try {
+//     const cities = await City.aggregate([
+//       {
+//         $lookup: {
+//           from: "states",
+//           localField: "stateId",
+//           foreignField: "_id",
+//           as: "stateDetails",
+//         },
+//       },
+//       { $unwind: "$stateDetails" },
+//       {
+//         $project: {
+//           _id: 1,
+//           cityName: 1,
+//           "stateDetails._id": 1,
+//           "stateDetails.stateName": 1,
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json({ success: true, count: cities.length, data: cities });
+//   } catch (error) {
+//     console.error("Error fetching cities:", error);
+//     res.status(500).json({ success: false, message: "Internal server error" });
+//   }
+// };
 exports.getAllCities = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalCities = await City.countDocuments();
+
     const cities = await City.aggregate([
       {
         $lookup: {
@@ -31,12 +65,31 @@ exports.getAllCities = async (req, res) => {
           "stateDetails.stateName": 1,
         },
       },
+      { $sort: { cityName: 1 } },
+
+      { $skip: skip },
+      { $limit: limit },
     ]);
 
-    res.status(200).json({ success: true, count: cities.length, data: cities });
+    const pagination = {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(totalCities / limit),
+      totalCities,
+      count: cities.length,
+    };
+
+    return res.status(200).json({
+      success: true,
+      pagination,
+      data: cities,
+    });
   } catch (error) {
     console.error("Error fetching cities:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 

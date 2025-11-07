@@ -3,26 +3,84 @@ const State = require("../models/State.model");
 exports.createState = async (req, res) => {
   try {
     const { stateName } = req.body;
-    const state = await State.create({ stateName });
-    return res.status(201).json({ success: true, data: state });
+
+    const existingState = await State.findOne({ stateName: stateName.trim() });
+
+    if (existingState) {
+      return res.status(400).json({
+        success: false,
+        message: "State already exists",
+      });
+    }
+
+    const state = await State.create({ stateName: stateName.trim() });
+
+    return res.status(201).json({
+      success: true,
+      message: "State created successfully",
+      data: state,
+    });
   } catch (error) {
     console.error("Error creating state:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "State already exists",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
 // exports.getAllStates = async (req, res) => {
 //   try {
-//     const states = await State.find().sort({ stateName: 1 });
-//     res.status(200).json({ success: true, count: states.length, data: states });
+//     const statesWithCities = await State.aggregate([
+//       {
+//         $lookup: {
+//           from: "cities",
+//           localField: "_id",
+//           foreignField: "stateId",
+//           as: "cities",
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           stateName: 1,
+//           "cities._id": 1,
+//           "cities.cityName": 1,
+//         },
+//       },
+//       { $sort: { stateName: 1 } },
+//     ]);
+
+//     res.status(200).json({
+//       success: true,
+//       count: statesWithCities.length,
+//       data: statesWithCities,
+//     });
 //   } catch (error) {
-//     console.error("Error fetching states:", error);
-//     res.status(500).json({ success: false, message: "Internal server error" });
+//     console.error("Error fetching states with cities:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//     });
 //   }
 // };
 
 exports.getAllStates = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalStates = await State.countDocuments();
+
     const statesWithCities = await State.aggregate([
       {
         $lookup: {
@@ -41,16 +99,26 @@ exports.getAllStates = async (req, res) => {
         },
       },
       { $sort: { stateName: 1 } },
+      { $skip: skip },
+      { $limit: limit },
     ]);
 
-    res.status(200).json({
-      success: true,
+    const pagination = {
+      currentPage: page,
+      limit,
+      totalPages: Math.ceil(totalStates / limit),
+      totalStates,
       count: statesWithCities.length,
+    };
+
+    return res.status(200).json({
+      success: true,
+      pagination,
       data: statesWithCities,
     });
   } catch (error) {
     console.error("Error fetching states with cities:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal server error",
     });
