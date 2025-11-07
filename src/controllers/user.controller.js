@@ -1,6 +1,8 @@
 const { default: mongoose } = require("mongoose");
 const User = require("../models/UserModel.js");
 const Business = require("../models/BusinessProfile.js");
+const admin = require('../config/firebaseAdmin.js');
+
 
 const completeProfile = async (req, res) => {
   const { name, email } = req.body;
@@ -214,9 +216,8 @@ const toggleUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: `User ${
-        user.isDisabled ? "deactivated" : "active"
-      } successfully`,
+      message: `User ${user.isDisabled ? "deactivated" : "active"
+        } successfully`,
       user,
     });
   } catch (err) {
@@ -232,7 +233,9 @@ const saveFcmToken = async (req, res) => {
       return res.status(200).json({ error: 'Token and userId are required' });
     }
     await User.findByIdAndUpdate(userId, { pushNotificationToken: pushNotificationToken });
-    // await admin.messaging().subscribeToTopic([token], 'allUsers');
+    const check = await admin.messaging().subscribeToTopic([pushNotificationToken], 'allUsers');
+    console.dir(check.errors, { depth: null })
+
     return res.json({ success: true, message: 'Token registered successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error', details: error.message });

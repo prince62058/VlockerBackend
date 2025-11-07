@@ -19,6 +19,7 @@ const cityRoutes = require("./routes/City.routes");
 const mobileBrandRoutes = require("./routes/MobileBrand.routes");
 const mobileModelRoutes = require("./routes/MobileModel.routes");
 const  keysRoutes=require('./routes/keys.routes')
+const  notification=require('./routes/Notification.routes')
 
 
 const app = express();
@@ -59,6 +60,7 @@ app.use("/api/mobile-models", mobileModelRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
 app.use("/api/keys", keysRoutes);
+app.use("/api/notification",notification);
 // app.set("trust proxy", true);
 
 app.use("/api/company", companySupportRoutes);

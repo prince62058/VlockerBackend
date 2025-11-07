@@ -137,7 +137,7 @@ const userkeyHistory = async (req, res) => {
 
         const allKeys = await Keys.find({
             userId: userId
-        }).sort({ createdAt: -1 }).skip(skip).limit(limit)
+        }).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('userId')
         const totalKeys = await Keys.countDocuments({
             userId:userId
         });
@@ -172,7 +172,7 @@ const allKeys = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const allKeys = await Keys.find({}).sort({ creatdAt: -1 }).skip(skip).limit(limit)
+        const allKeys = await Keys.find({}).sort({ creatdAt: -1 }).skip(skip).limit(limit).populate('userId')
         const totalKeys = await Keys.countDocuments({});
         const totalPages = Math.ceil(totalKeys / limit);
 
