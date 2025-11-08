@@ -2,10 +2,10 @@ const { default: mongoose } = require("mongoose");
 const { sendNotificationCore } = require("../lib/notifications");
 const NotificationModel = require("../models/Notification.model");
 const defaults = {
-    topic: "allUser",
+    topic: "allUsers",
     imageUrl: undefined,
     silent: false,
-    highPriority: false,
+    highPriority: true,
     androidChannelId: "high_importance_channel",
     clickAction: "OPEN_APP",
     data: {}

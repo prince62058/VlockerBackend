@@ -3,7 +3,7 @@ const User = require("../models/UserModel");
 const admin = require('../config/firebaseAdmin');
 const NotificationModel = require("../models/Notification.model");
 
-exports.sendNotificationCore = async ({ userId, title, bodi, data, topic = undefined, imageUrl = undefined, silent = false, highPriority = false, androidChannelId = "high_importance_channel",
+exports.sendNotificationCore = async ({ userId, title, bodi, data, topic, imageUrl, silent , highPriority , androidChannelId = "high_importance_channel",
     clickAction = 'OPEN_APP'
 
 }) => {
@@ -56,31 +56,30 @@ exports.sendNotificationCore = async ({ userId, title, bodi, data, topic = undef
     };
 
 
-    message.apns = {
-        headers: {
-            'apns-priority': silent ? '5' : '10',
-            'apns-push-type': silent ? 'background' : 'alert',
-        },
-        payload: {
-            aps: {
-                contentAvailable: silent ? 1 : 0,
-
-                // ...(silent
-                //     ? {}
-                //     : {
-                //         sound: 'default',
-                //         alert: { title, body }
-                //     }
-                // )
-            }
+   message.apns = {
+    headers: {
+        'apns-priority': silent ? '5' : '10',
+        'apns-push-type': silent ? 'background' : 'alert',
+    },
+    payload: {
+        aps: {
+            'content-available': silent ? 1 : 0,   
+            
+            ...(silent
+                ? {}
+                : {
+                    sound: 'default',
+                    alert: { title, body }
+                }
+            )
         }
-    };
-
+    }
+};
 
 
     const response = await admin.messaging().send(message);
+    
  
-    console.log(userId)
     
     await NotificationModel.create({ userId: userId, title, body: bodi, data });
 

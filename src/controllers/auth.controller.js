@@ -18,10 +18,22 @@ const OTP_SALT_ROUNDS = parseInt(
   10
 );
 
+
 function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
   const expiry = new Date();
   expiry.setMinutes(expiry.getMinutes() + minutes);
   return expiry;
+}
+function generateOTP(length = CONFIG.otpLength) {
+  const digits = '0123456789';
+  let otp = '';
+  const randomBytes = crypto.randomBytes(length);
+
+  for (let i = 0; i < length; i++) {
+    otp += digits[randomBytes[i] % 10];
+  }
+
+  return otp;
 }
 const registerAdmin = async (req, res) => {
   try {
@@ -40,7 +52,7 @@ const registerAdmin = async (req, res) => {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const newAdmin = await User.create({
-     
+
       email: email.toLowerCase(),
       password: hashedPassword,
       role: 'admin'
@@ -58,7 +70,7 @@ const registerAdmin = async (req, res) => {
       message: 'Admin registered successfully',
       data: {
         id: newAdmin._id,
-      
+
         email: newAdmin.email,
         token
       }
@@ -126,11 +138,11 @@ const loginAdmin = async (req, res) => {
       success: true,
       message: 'Login successful',
       data: {
-         
-          id: admin._id,
-          name: admin.name,
-          email: admin.email,
-        
+
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+
         token
       }
     });
@@ -161,7 +173,45 @@ const sendOtp = async (req, res) => {
         phone,
       });
     }
+
+    const now = new Date();
+    if (user.phoneOtp?.lastSentAt) {
+      const timeSinceLastOtp = now - new Date(user.phoneOtp.lastSentAt);
+      const cooldownPeriod = 60 * 1000;
+
+      if (timeSinceLastOtp < cooldownPeriod) {
+        const waitTime = Math.ceil((cooldownPeriod - timeSinceLastOtp) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${waitTime} seconds before requesting another OTP`,
+        });
+      }
+    }
+    const dailyLimit = 5;
+    if (user.phoneOtp?.attempts >= dailyLimit) {
+      const lastAttemptDate = new Date(user.phoneOtp.lastSentAt);
+      const hoursSinceLastAttempt = (now - lastAttemptDate) / (1000 * 60 * 60);
+
+      if (hoursSinceLastAttempt < 24) {
+        return res.status(429).json({
+          success: false,
+          message: "Daily OTP limit reached. Please try again after 24 hours",
+        });
+      } else {
+        user.phoneOtp.attempts = 0;
+      }
+    }
+    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+
     const otp = "1234";
+    const otpSent = await sendOtpViaMSG91(phone, otp);
+    if (!otpSent) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP. Please try again",
+      });
+    }
     const expiresAt = getExpiryDate();
     const hashedOtp = await bcrypt.hash(otp, OTP_SALT_ROUNDS);
     user.phoneOtp = {
@@ -188,6 +238,53 @@ const sendOtp = async (req, res) => {
     });
   }
 };
+
+const https = require('https')
+ 
+
+const sendOtpViaMSG91 = async (mobile, otp) => {
+  console.log(mobile,otp)
+  return new Promise((resolve, reject) => {
+    const options = {
+      method: "POST",
+      hostname: "api.msg91.com",
+      path: "/api/v5/flow/",
+      headers: {
+        authkey: process.env.AUTH_KEY,
+        "content-type": "application/json",
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      const chunks = [];
+
+      res.on("data", (chunk) => chunks.push(chunk));
+
+      res.on("end", () => {
+        const body = Buffer.concat(chunks).toString();
+        console.log("OTP Sent:", body);
+        resolve(body);
+      });
+    });
+
+    req.on("error", (err) => {
+      console.error("Error sending OTP:", err);
+      reject(err);
+    });
+
+    const payload = {
+      flow_id: "63614b3dabf10640e61fa856",
+      sender: "DSMONL",
+      mobiles: `91${mobile}`,
+      otp: otp
+    };
+
+    req.write(JSON.stringify(payload));
+    req.end();
+  });
+};
+
+ 
 const verifyOtp = async (req, res) => {
   const { phone, otpCode } = req.body;
   if (!phone) {

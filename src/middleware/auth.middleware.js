@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/UserModel");
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -19,6 +20,16 @@ const authMiddleware = (req, res, next) => {
     if (req.role === 'admin' && req.query.userId) {
       req.userId = req.query.userId;
     }
+    // if (req.role !== 'admin') {
+    //   const isExist = await User.findById(req.userId);
+    //   if(isExist.isDisabled){
+
+    //     return res
+    //     .status(409)
+    //     .json({ success: false, message: "user is disabled or forbidden" });
+    //   }
+
+    // }
 
     next();
   } catch (error) {

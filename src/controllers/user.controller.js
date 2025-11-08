@@ -46,16 +46,31 @@ const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const isDisabled = Boolean(req.query.isDisabled) || false;
+    const search = req.query.search || undefined;
 
-    const users = await User.find({})
+
+    const skip = (page - 1) * limit;
+    const filter = {}
+    filter.isDisabled = isDisabled
+    if (search) {
+
+      filter.$or = [
+        { phone: { $regex: search.trim(), $options: 'i' } },
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { email: { $regex: search.trim(), $options: 'i' } }
+      ]
+
+    }
+
+    const users = await User.find(filter)
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
       .select("-phoneOtp.attempts -phoneOtp.codeHash")
       .populate("BusinessProfile");
 
-    const totalUsers = await User.countDocuments();
+    const totalUsers = await User.countDocuments(filter);
     const totalPages = Math.ceil(totalUsers / limit);
     const pagination = {
       totalUsers,
