@@ -325,6 +325,38 @@ const getAllloans = async (req, res) => {
               },
             },
           },
+          nextEmiDetails: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: { $ifNull: ["$installments", []] },
+                  as: "inst",
+                  cond: { $eq: ["$$inst.status", "PENDING"] },
+                },
+              },
+              0,
+            ],
+          },
+          totalDueAmount: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: { $ifNull: ["$installments", []] },
+                    as: "inst",
+                    cond: {
+                      $and: [
+                        { $eq: ["$$inst.status", "PENDING"] },
+                        { $lte: ["$$inst.dueDate", new Date()] },
+                      ],
+                    },
+                  },
+                },
+                as: "dueInst",
+                in: "$$dueInst.amount",
+              },
+            },
+          },
         },
       },
       {
