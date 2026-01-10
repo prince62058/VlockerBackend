@@ -3,7 +3,12 @@ const Customer = require("../models/Customer.model");
 const User = require("../models/UserModel");
 const { default: mongoose } = require("mongoose");
 
-const generateInstallments = ({ numberOfEMIs, emiAmount, firstEmiDate, frequency }) => {
+const generateInstallments = ({
+  numberOfEMIs,
+  emiAmount,
+  firstEmiDate,
+  frequency,
+}) => {
   const installments = [];
   let currentDate = new Date(firstEmiDate);
 
@@ -12,12 +17,12 @@ const generateInstallments = ({ numberOfEMIs, emiAmount, firstEmiDate, frequency
       installmentNumber: i,
       dueDate: new Date(currentDate),
       amount: emiAmount,
-      status: emiAmount==0?"PAID":"PENDING",
+      status: emiAmount == 0 ? "PAID" : "PENDING",
       paidAmount: 0,
-      paidDate: emiAmount==0?new Date():null,
+      paidDate: emiAmount == 0 ? new Date() : null,
       paymentMethod: null,
       lateFee: 0,
-      remarks: null
+      remarks: null,
     });
 
     if (frequency === "monthly" && i < numberOfEMIs) {
@@ -38,12 +43,12 @@ const calculateEMI = (principal, annualRate, numberOfEMIs) => {
     return Math.round(principal / numberOfEMIs);
   }
 
-  const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfEMIs)) /
-              (Math.pow(1 + monthlyRate, numberOfEMIs) - 1);
+  const emi =
+    (principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfEMIs)) /
+    (Math.pow(1 + monthlyRate, numberOfEMIs) - 1);
 
   return Math.round(emi);
 };
-
 
 const createCustomerloan = async (req, res) => {
   const { customerId } = req.params;
@@ -52,14 +57,23 @@ const createCustomerloan = async (req, res) => {
       _id: customerId,
       createdBy: req.userId,
     });
-    const keysExist=await User.findById(req.userId);
 
-    if(keysExist?.keys<=0){
-       return res.status(400).json({
+    const keysExist = await User.findById(req.userId);
+    const loanExist = await Loan.findOne({
+      imeiNumber1: req.body.imeiNumber1,
+    });
+    if (loanExist) {
+      return res.status(400).json({
+        success: false,
+        message: "imei number already exist",
+      });
+    }
+
+    if (keysExist?.keys <= 0) {
+      return res.status(400).json({
         success: false,
         message: "request keys to create loan",
       });
-
     }
     if (!customer) {
       return res.status(404).json({
@@ -72,25 +86,26 @@ const createCustomerloan = async (req, res) => {
     const processingFees = req.body?.processingFees || 0;
     const interestRate = req.body?.interestRate || 0;
     const numberOfEMIs = req.body?.numberOfEMIs || 1;
-    const financer=req.body?.financer || 'admin'
-    const paymentOptions=req.body?.paymentOptions || "upi"
-    
-    let firstEmiDate = new Date(req.body?.firstEmiDate) 
-    if(isNaN(firstEmiDate)){
-      firstEmiDate=new Date()
+    const financer = req.body?.financer || "admin";
+    const paymentOptions = req.body?.paymentOptions || "upi";
+
+    let firstEmiDate = new Date(req.body?.firstEmiDate);
+    if (isNaN(firstEmiDate)) {
+      firstEmiDate = new Date();
     }
- 
+
     const loanAmount = req.body?.loanAmount;
-    let frequency = req.body?.frequency || 'monthly'
-    
-    const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs)
-    console.log(req.body,emiAmount)
-    console.log(loanAmount,interestRate,numberOfEMIs , emiAmount)
+    const amountLeft = loanAmount;
+    let frequency = req.body?.frequency || "monthly";
+
+    const emiAmount = calculateEMI(loanAmount, interestRate, numberOfEMIs);
+    console.log(req.body, emiAmount);
+    console.log(loanAmount, interestRate, numberOfEMIs, emiAmount);
     const [installments, emiEndDate] = generateInstallments({
       numberOfEMIs,
       emiAmount,
       firstEmiDate,
-      frequency
+      frequency,
     });
 
     const loan = new Loan({
@@ -99,6 +114,8 @@ const createCustomerloan = async (req, res) => {
       financer,
       paymentOptions,
       emiAmount,
+      amountLeft: amountLeft,
+      amountPaid: downPayment,
       emiStartDate: firstEmiDate,
       emiEndDate: emiEndDate,
       customerId: customerId,
@@ -114,8 +131,8 @@ const createCustomerloan = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Error creating customer loan",
-        error: "A loan with this IMEI number already exists.",
+        message: "A loan with this IMEI number already exists.",
+        error: error.message,
       });
     }
     res.status(400).json({
@@ -134,18 +151,57 @@ const getAllCustomersloan = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = {
-      customerId: req.params.customerId,
-      createdBy: req.userId,
+      customerId: new mongoose.Types.ObjectId(req.params.customerId),
+      createdBy: new mongoose.Types.ObjectId(req.userId),
     };
 
-    const loans = await Loan.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 }).populate("customerId");
+    // const loans2 = await Loan.find(filter)
+    //   .skip(skip)
+    //   .limit(limit)
+    //   .sort({ createdAt: -1 }).populate("customerId");
 
-    const totalLoans = await Loan.countDocuments(filter);
+    let sort = undefined;
+    if (!sort) {
+      sort = {
+        createdAt: -1,
+      };
+    }
 
+    const loans = await Loan.aggregate([
+      { $match: filter },
+
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customerId",
+        },
+      },
+      { $unwind: "$customerId" },
+      {
+        $addFields: {
+          installmentsPaid: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ["$installments", []] },
+                as: "inst",
+                cond: { $eq: ["$$inst.status", "PAID"] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $facet: {
+          data: [{ $sort: sort }, { $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
+    const totalLoans = loans[0].totalCount[0]?.count || 0;
     const totalPages = Math.ceil(totalLoans / limit);
+
     const pagination = {
       totalLoans,
       totalPages: totalPages,
@@ -155,7 +211,7 @@ const getAllCustomersloan = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Customers Loan retrieved successfully",
-      data: loans,
+      data: loans[0]?.data,
       pagination,
     });
   } catch (error) {
@@ -173,84 +229,73 @@ const getAllloans = async (req, res) => {
     const skip = (page - 1) * limit;
     const runningDevice = req.query.runningDevice || null;
     const newDevice = req.query.newDevice || null;
-    const deactivateDevices = req.query.deactivateDevices || null
-    const lockedDevices = req.query.lockedDevices || null
-    const notActiveDevices = req.query.notActiveDevices || null
-    const upcomingEmis = req.query.upcomingEmis || null
-    const unlockDevices = req.query.unlockDevices || null
-    let sort = undefined
-    const filter = {
-      createdBy: new mongoose.Types.ObjectId(req.userId),
-    };
-    const filters = []
+    const deactivateDevices = req.query?.deactivateDevices || null;
+    const lockedDevices = req.query?.lockedDevices || null;
+    const notActiveDevices = req.query?.notActiveDevices || null;
+    const upcomingEmis = req.query?.upcomingEmis || null;
+    const unlockDevices = req.query.unlockDevices || null;
+    let sort = undefined;
+
+    const filters = [];
 
     if (runningDevice) {
       filters.push({
         loanStatus: "APPROVED",
-        firstEmiDate: { $lte: new Date() }
-      })
+        firstEmiDate: { $lte: new Date() },
+      });
     }
     if (newDevice) {
       filters.push({
         loanStatus: "APPROVED",
-        firstEmiDate: { $gte: new Date() }
-      })
+        firstEmiDate: { $gte: new Date() },
+      });
     }
     if (deactivateDevices) {
       filters.push({
-        loanStatus: 'CLOSED'
-      })
-
+        loanStatus: "CLOSED",
+      });
     }
     if (lockedDevices) {
       filters.push({
-        deviceUnlockStatus: 'LOCKED'
-      })
-
+        deviceUnlockStatus: "LOCKED",
+      });
     }
     if (unlockDevices) {
       filters.push({
-        deviceUnlockStatus: 'UNLOCKED',
+        deviceUnlockStatus: "UNLOCKED",
         loanStatus: "APPROVED",
-      })
-
+      });
     }
     if (notActiveDevices) {
       filters.push({
-        loanStatus: 'PENDING'
-      })
-
+        loanStatus: "PENDING",
+      });
     }
     if (upcomingEmis) {
       filters.push({
-        loanStatus: 'APPROVED',
+        loanStatus: "APPROVED",
         installments: {
           $elemMatch: {
             dueDate: { $gte: new Date() },
-            status: 'PENDING'
-          }
-        }
-
-      })
+            status: "PENDING",
+          },
+        },
+      });
       sort = {
-        "installments.dueDate": 1
-
-      }
+        "installments.dueDate": 1,
+      };
     }
     const finalFilter = {
       createdBy: new mongoose.Types.ObjectId(req.userId),
 
-      ...(filters.length > 0 ? { $or: filters } : {})
-    }
+      ...(filters.length > 0 ? { $or: filters } : {}),
+    };
 
     if (!sort) {
       sort = {
-        createdAt: -1
-      }
+        createdAt: -1,
+      };
     }
-
-
-
 
     const loans = await Loan.aggregate([
       { $match: finalFilter },
@@ -260,42 +305,38 @@ const getAllloans = async (req, res) => {
           from: "customers",
           localField: "customerId",
           foreignField: "_id",
-          as: "customerId"
-        }
+          as: "customerId",
+        },
       },
-      {$unwind:'$customerId'},
+      {
+        $unwind: {
+          path: "$customerId",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $addFields: {
           installmentsPaid: {
             $size: {
               $filter: {
-                input: {$ifNull:["$installments",[]]},
+                input: { $ifNull: ["$installments", []] },
                 as: "inst",
-                cond: { $eq: ["$$inst.status", "PAID"] }
-              }
-            }
-          }
-        }
-      }
-      ,
+                cond: { $eq: ["$$inst.status", "PAID"] },
+              },
+            },
+          },
+        },
+      },
       {
         $facet: {
-          data: [
-            { $sort: sort },
-            { $skip: skip },
-            { $limit: limit }
-          ],
-          totalCount: [
-            { $count: "count" }
-          ]
-        }
-      }
-
-    ])
+          data: [{ $sort: sort }, { $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
     //  console.log(loans)
 
     // const totalLoans = await Loan.countDocuments();
-
 
     // const totalPages = Math.ceil(totalLoans / limit);
     const totalLoans = loans[0].totalCount[0]?.count || 0;
@@ -328,7 +369,7 @@ const getCustomerloanById = async (req, res) => {
     const loan = await Loan.findOne({
       _id: req.params.loanId,
       createdBy: req.userId,
-    });
+    }).populate("customerId");
     if (!loan) {
       return res
         .status(404)
@@ -393,13 +434,11 @@ const deleteCustomerloan = async (req, res) => {
       .status(200)
       .json({ success: true, message: "Customer loan deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error deleting customer loan",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error deleting customer loan",
+      error: error.message,
+    });
   }
 };
 
@@ -411,7 +450,6 @@ const getDueInstallments = async (req, res) => {
 
     const userId = new mongoose.Types.ObjectId(req.userId);
 
-
     const dueInstallments = await Loan.aggregate([
       {
         $match: {
@@ -419,35 +457,30 @@ const getDueInstallments = async (req, res) => {
           installments: {
             $elemMatch: {
               dueDate: { $lte: new Date() },
-              status: 'PENDING'
-
-            }
-          }
-        }
+              status: "PENDING",
+            },
+          },
+        },
       },
       {
         $lookup: {
-          from: 'customers',
-          localField: 'customerId',
-          foreignField: '_id',
-          as: 'customerId'
-
-        }
+          from: "customers",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customerId",
+        },
       },
       {
         $facet: {
           data: [
             { $sort: { createdAt: -1 } },
             { $skip: skip },
-            { $limit: limit }
+            { $limit: limit },
           ],
-          totalCount: [
-            { $count: "count" }
-          ]
-        }
-      }
-
-    ])
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
     const totalLoans = dueInstallments[0].totalCount[0]?.count || 0;
     const totalPages = Math.ceil(totalLoans / limit);
 
@@ -457,23 +490,20 @@ const getDueInstallments = async (req, res) => {
       currentPage: page,
     };
 
-    res
-      .status(200)
-      .json({ success: true, message: "Due installments fetched successfully", data: dueInstallments[0].data, pagination: pagination });
+    res.status(200).json({
+      success: true,
+      message: "Due installments fetched successfully",
+      data: dueInstallments[0].data,
+      pagination: pagination,
+    });
   } catch (error) {
-
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Error deleting customer loan",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Error deleting customer loan",
+      error: error.message,
+    });
   }
-
-
-
-}
+};
 
 module.exports = {
   createCustomerloan,
@@ -482,6 +512,5 @@ module.exports = {
   updateCustomerloan,
   deleteCustomerloan,
   getAllloans,
-  getDueInstallments
-
+  getDueInstallments,
 };

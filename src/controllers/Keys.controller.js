@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Keys = require("../models/KeysModel");
+const User = require('../models/UserModel');
 
 const requestKeys = async (req, res) => {
     try {
@@ -47,7 +48,7 @@ const updateStatus = async (req, res) => {
 
     try {
         const keyId = req.params.keyId;
-      
+
 
         if (!keyId) {
             return res.status(400).json({
@@ -97,9 +98,10 @@ const updateStatus = async (req, res) => {
 
         const data = await Keys.findOneAndUpdate(
             { _id: new mongoose.Types.ObjectId(keyId) },
-             req.body,
+            {$set :req.body},
             { new: true, session: session }
         );
+ 
 
         await session.commitTransaction();
         session.endSession();
@@ -139,7 +141,7 @@ const userkeyHistory = async (req, res) => {
             userId: userId
         }).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('userId')
         const totalKeys = await Keys.countDocuments({
-            userId:userId
+            userId: userId
         });
         const totalPages = Math.ceil(totalKeys / limit);
 
@@ -153,7 +155,7 @@ const userkeyHistory = async (req, res) => {
             status: true,
             message: "key history fetched successfully",
             data: allKeys,
-            pagination:pagination
+            pagination: pagination
         });
     } catch (error) {
 
@@ -171,9 +173,48 @@ const allKeys = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const status = req.query?.status || null;
+        const search = req.query?.search || null;
+        const filter = {}
+        if (status?.trim()) {
+            filter.status = status.trim()
+        }
+        const searchFilter = {}
 
-        const allKeys = await Keys.find({}).sort({ creatdAt: -1 }).skip(skip).limit(limit).populate('userId')
-        const totalKeys = await Keys.countDocuments({});
+        if (search?.trim()) {
+
+            searchFilter.$or = [
+
+                { "userId.name": { $regex: search, $options: "i" } },
+
+            ]
+        }
+        const allKeys = await Keys.aggregate([
+            { $match: filter },
+
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "userId"
+                }
+            },
+
+            { $unwind: "$userId" },
+
+            {
+                $match: searchFilter
+            },
+
+            { $sort: { createdAt: -1 } },
+
+            { $skip: skip },
+
+            { $limit: limit }
+        ]);
+
+        const totalKeys = await Keys.countDocuments(filter);
         const totalPages = Math.ceil(totalKeys / limit);
 
         const pagination = {
@@ -186,7 +227,7 @@ const allKeys = async (req, res) => {
             status: true,
             message: "all keys fetched successfully",
             data: allKeys,
-            pagination:pagination
+            pagination: pagination
         });
     } catch (error) {
 

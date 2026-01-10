@@ -18,13 +18,13 @@ const stateRoutes = require("./routes/State.routes");
 const cityRoutes = require("./routes/City.routes");
 const mobileBrandRoutes = require("./routes/MobileBrand.routes");
 const mobileModelRoutes = require("./routes/MobileModel.routes");
-const  keysRoutes=require('./routes/keys.routes')
-const  notification=require('./routes/Notification.routes')
-
+const keysRoutes = require("./routes/keys.routes");
+const notification = require("./routes/Notification.routes");
+const deviceRoutes = require("./routes/Device.routes");
 
 const app = express();
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 1 * 60 * 1000,
   max: 100,
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
@@ -60,7 +60,8 @@ app.use("/api/mobile-models", mobileModelRoutes);
 
 app.use("/api/upload", InstallationVideoRoutes);
 app.use("/api/keys", keysRoutes);
-app.use("/api/notification",notification);
+app.use("/api/notification", notification);
+app.use("/api/device", deviceRoutes);
 // app.set("trust proxy", true);
 
 app.use("/api/company", companySupportRoutes);

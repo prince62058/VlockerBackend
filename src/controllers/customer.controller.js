@@ -279,10 +279,62 @@ const getAllCustomers = async (req, res) => {
 
 const getCustomerById = async (req, res) => {
   try {
-    const customer = await Customer.findOne({
-      _id: req.params.id,
-      createdBy: req.userId,
-    }).populate("Loan Bank Address");
+    const filter = { _id: new mongoose.Types.ObjectId(req.params.id) };
+    const check=await Customer.find(filter).populate('Address')
+    const customer = await Customer.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "loans",
+          localField: "_id",
+          foreignField: "customerId",
+          as: "Loan"
+        }
+      },
+      {
+        $lookup: {
+          from: "banks",
+          localField: "_id",
+          foreignField: "customerId",
+          as: "Bank"
+        }
+      },
+      {
+        $lookup: {
+          from: "addresses",
+          localField: "_id",
+          foreignField: "customerId",
+          as: "Address"
+        }
+      },
+      {
+        $unwind: {
+          path: "$Address",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          address: { $ifNull: ["$Address", {}] }
+        }
+      },
+      {
+        $addFields: {
+          activeLoans: {
+            $size: {
+              $filter: {
+                input: "$Loan",
+                as: "loan",
+                cond: { $eq: ["$$loan.loanStatus", "APPROVED"] }
+              }
+            }
+          }
+        }
+      }
+    ])
+
+
+
     if (!customer) {
       return res
         .status(404)
@@ -290,7 +342,7 @@ const getCustomerById = async (req, res) => {
     }
     res
       .status(200)
-      .json({ success: true, message: "Customer found", data: customer });
+      .json({ success: true, message: "Customer found", data: customer[0] });
   } catch (error) {
     res.status(500).json({
       success: false,

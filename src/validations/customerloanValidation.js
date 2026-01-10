@@ -25,10 +25,10 @@ const createLoanSchema = Joi.object({
     .valid("New Phone", "Old/Running Phone")
     .required(),
   mobileBrand: Joi.string()
-    .valid("label1", "label2", "label3", "label4", "label5")
+    // .valid("label1", "label2", "label3", "label4", "label5")
     .required(),
   mobileModel: Joi.string()
-    .valid("label1", "label2", "label3", "label4", "label5")
+    // .valid("label1", "label2", "label3", "label4", "label5")
     .required(),
   imeiNumber1: Joi.string().length(15).required(),
   imeiNumber2: Joi.string().length(15).optional(),
@@ -65,20 +65,8 @@ firstEmiDate: Joi.date().optional().empty(''),
 
 const updateLoanSchema = Joi.object({
   installationType: Joi.string().valid("New Phone", "Old/Running Phone"),
-  mobileBrand: Joi.string().valid(
-    "label1",
-    "label2",
-    "label3",
-    "label4",
-    "label5"
-  ),
-  mobileModel: Joi.string().valid(
-    "label1",
-    "label2",
-    "label3",
-    "label4",
-    "label5"
-  ),
+  mobileBrand: Joi.string(),
+  mobileModel: Joi.string(),
   imeiNumber1: Joi.string().length(15),
   imeiNumber2: Joi.string().length(15),
   mobilePrice: Joi.number().min(0),

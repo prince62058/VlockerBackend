@@ -33,6 +33,8 @@ keysSchema.pre("findOneAndUpdate", async function (next) {
     const payload = update.$set ? update.$set : update;
     const filter = this.getQuery()
     const oldDoc = await this.model.findOne(filter).session(session);
+    console.log("inside update",update)
+    console.log(payload)
     if (payload.status == 'Approved') {
         await User.findOneAndUpdate(oldDoc.userId
             , {

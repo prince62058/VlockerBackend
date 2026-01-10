@@ -18,15 +18,14 @@ const OTP_SALT_ROUNDS = parseInt(
   10
 );
 
-
 function getExpiryDate(minutes = DEFAULT_EXPIRY_MINUTES) {
   const expiry = new Date();
   expiry.setMinutes(expiry.getMinutes() + minutes);
   return expiry;
 }
 function generateOTP(length = CONFIG.otpLength) {
-  const digits = '0123456789';
-  let otp = '';
+  const digits = "0123456789";
+  let otp = "";
   const randomBytes = crypto.randomBytes(length);
 
   for (let i = 0; i < length; i++) {
@@ -37,51 +36,46 @@ function generateOTP(length = CONFIG.otpLength) {
 }
 const registerAdmin = async (req, res) => {
   try {
-
-
     const { email, password } = req.body;
 
     const existingAdmin = await User.findOne({ email: email.toLowerCase() });
     if (existingAdmin) {
       return res.status(409).json({
         success: false,
-        message: 'Admin with this email already exists'
+        message: "Admin with this email already exists",
       });
     }
 
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const newAdmin = await User.create({
-
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: 'admin'
+      role: "admin",
     });
     const tokenPayload = {
       userId: newAdmin._id,
-      role: newAdmin.role
-
+      role: newAdmin.role,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET);
 
     res.status(201).json({
       success: true,
-      message: 'Admin registered successfully',
+      message: "Admin registered successfully",
       data: {
         id: newAdmin._id,
 
         email: newAdmin.email,
-        token
-      }
+        token,
+      },
     });
-
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error("Registration error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Server error during registration",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -98,13 +92,13 @@ const loginAdmin = async (req, res) => {
     // }
 
     const admin = await User.findOne({
-      email: email.toLowerCase()
-    }).select('+password');
+      email: email.toLowerCase(),
+    }).select("+password");
 
     if (!admin) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -113,53 +107,48 @@ const loginAdmin = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
     if (admin.isDisabled === true) {
       return res.status(403).json({
         success: false,
-        message: 'Account has been deactivated'
+        message: "Account has been deactivated",
       });
     }
 
     const tokenPayload = {
       userId: admin._id,
-      role: admin.role
-
+      role: admin.role,
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET);
 
-
-
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
-
         id: admin._id,
         name: admin.name,
         email: admin.email,
 
-        token
-      }
+        token,
+      },
     });
-
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: "Server error during login",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 const sendOtp = async (req, res) => {
   try {
-    const { phone } = req.body;
+    const { phone, type } = req.body;
 
     if (!phone) {
       return res.status(400).json({
@@ -168,7 +157,15 @@ const sendOtp = async (req, res) => {
       });
     }
     let user = await User.findOne({ phone }).select("+phoneOtp.codeHash");
+
+    // [MODIFIED] Added check for 'login' type. If user doesn't exist during login, return 404.
     if (!user) {
+      if (type === "login") {
+        return res.status(404).json({
+          success: false,
+          message: "Number is not registered",
+        });
+      }
       user = new User({
         phone,
       });
@@ -202,7 +199,6 @@ const sendOtp = async (req, res) => {
       }
     }
     // const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
 
     const otp = "1234";
     const otpSent = await sendOtpViaMSG91(phone, otp);
@@ -239,11 +235,10 @@ const sendOtp = async (req, res) => {
   }
 };
 
-const https = require('https')
- 
+const https = require("https");
 
 const sendOtpViaMSG91 = async (mobile, otp) => {
-  console.log(mobile,otp)
+  console.log(mobile, otp);
   return new Promise((resolve, reject) => {
     const options = {
       method: "POST",
@@ -276,7 +271,7 @@ const sendOtpViaMSG91 = async (mobile, otp) => {
       flow_id: "63614b3dabf10640e61fa856",
       sender: "DSMONL",
       mobiles: `91${mobile}`,
-      otp: otp
+      otp: otp,
     };
 
     req.write(JSON.stringify(payload));
@@ -284,16 +279,13 @@ const sendOtpViaMSG91 = async (mobile, otp) => {
   });
 };
 
- 
 const verifyOtp = async (req, res) => {
   const { phone, otpCode } = req.body;
   if (!phone) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Phone number is required to verify OTP",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Phone number is required to verify OTP",
+    });
   }
 
   const user = await User.findOne({ phone }).select("+phoneOtp.codeHash");
@@ -302,30 +294,24 @@ const verifyOtp = async (req, res) => {
   }
 
   if (!user.phoneOtp || !user.phoneOtp.codeHash) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "No OTP is pending verification for this user",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "No OTP is pending verification for this user",
+    });
   }
 
   if (user.expiresAt < new Date()) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "OTP has expired. Please request a new OTP",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "OTP has expired. Please request a new OTP",
+    });
   }
 
   if (user.phoneOtp.attempts >= MAX_OTP_ATTEMPTS) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Maximum OTP attempts exceeded. Please request a new OTP",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Maximum OTP attempts exceeded. Please request a new OTP",
+    });
   }
 
   const normalizedOtp = String(otpCode || "").trim();
@@ -334,12 +320,10 @@ const verifyOtp = async (req, res) => {
   }
 
   if (!user.phoneOtp.codeHash) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "No OTP hash found. Please request a new OTP",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "No OTP hash found. Please request a new OTP",
+    });
   }
 
   const result = await bcrypt.compare(normalizedOtp, user.phoneOtp.codeHash);
@@ -356,7 +340,6 @@ const verifyOtp = async (req, res) => {
   await user.save();
   const tokenPayload = {
     userId: user.id,
-
   };
 
   const token = jwt.sign(tokenPayload, JWT_SECRET);
@@ -376,5 +359,5 @@ module.exports = {
   sendOtp,
   verifyOtp,
   registerAdmin,
-  loginAdmin
+  loginAdmin,
 };

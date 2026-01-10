@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
-const Brands = ["label1", "label2", "label3", "label4", "label5"];
-const models = ["label1", "label2", "label3", "label4", "label5"];
-
+ 
 const customerloanSchema = new mongoose.Schema(
   {
     customerId: {
@@ -12,17 +10,29 @@ const customerloanSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    amountPaid:{
+      type:Number,
+      default:0
+    },
+    amountLeft:{
+      type:Number,
+      default:0
+    },
+    installmentsPaid:{
+      type:Number,
+      default:0
+    },
     installationType: {
       type: String,
       enum: ["New Phone", "Old/Running Phone"],
     },
     mobileBrand: {
       type: String,
-      enum: Brands,
+     
     },
     mobileModel: {
       type: String,
-      enum: models,
+      
     },
     imeiNumber1: {
       type: String,

@@ -8,6 +8,8 @@ exports.sendOtpSchema = Joi.object({
       "string.pattern.base": "Phone number must be a valid 10-digit number.",
       "any.required": "Phone number is required.",
     }),
+  // [MODIFIED] Added optional 'type' field to allow 'login' flag in request body
+  type: Joi.string().optional(),
 });
 
 exports.verifyOtpSchema = Joi.object({

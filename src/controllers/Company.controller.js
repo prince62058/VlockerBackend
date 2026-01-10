@@ -25,12 +25,12 @@ const createSupportInfo = async (req, res) => {
 const updateSupportInfo = async (req, res) => {
   try {
     const updateData = { ...req.body };
+    // [MODIFIED] Force website to be https://www.vlockerapp.com as requested
+    updateData.website = "https://www.vlockerapp.com";
     for (const field_name in req.files) {
-      const files = req.files[field_name]
-       updateData[field_name]=files[0]?.location
+      const files = req.files[field_name];
+      updateData[field_name] = files[0]?.location;
     }
-
-
 
     const updated = await Company.findOneAndUpdate({}, updateData, {
       new: true,
@@ -53,12 +53,15 @@ const updateSupportInfo = async (req, res) => {
 
 const getSupportInfo = async (req, res) => {
   try {
-    const support = await Company.findOne();
+    const support = await Company.findOne().lean();
     if (!support) {
       return res
         .status(404)
         .json({ success: false, message: "No support info found" });
     }
+
+    // [MODIFIED] Force website to be https://www.vlockerapp.com as requested
+    support.website = "https://www.vlockerapp.com";
 
     res.status(200).json({
       success: true,

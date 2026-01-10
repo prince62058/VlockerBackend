@@ -126,9 +126,9 @@ exports.getAllStates = async (req, res) => {
       success: true,
       pagination,
       data: statesWithCities,
+      message: "States Fetched successfully",
     });
   } catch (error) {
-    console.error("Error fetching states with cities:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -147,7 +147,7 @@ exports.updateState = async (req, res) => {
         .status(404)
         .json({ success: false, message: "State not found" });
 
-    res.status(200).json({ success: true, data: updatedState });
+    res.status(200).json({ success: true, data: updatedState,message: "State Updated  successfully", });
   } catch (error) {
     console.error("Error updating state:", error);
     res.status(500).json({ success: false, message: "Internal server error" });

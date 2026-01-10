@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-const State = ["label1", "label2", "label3", "label4", "label5"];
-const City = ["label1", "label2", "label3", "label4", "label5"];
+ 
 
 const addressSchema = new mongoose.Schema(
   {
@@ -17,11 +16,11 @@ const addressSchema = new mongoose.Schema(
     },
     customerState: {
       type: String,
-      enum: State,
+ 
     },
     customerCity: {
       type: String,
-      enum: City,
+ 
     },
     landmark: {
       type: String,

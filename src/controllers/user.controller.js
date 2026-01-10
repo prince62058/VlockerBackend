@@ -46,13 +46,17 @@ const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const isDisabled = Boolean(req.query.isDisabled) || false;
+    const isDisabled =req.query?.isDisabled;
     const search = req.query.search || undefined;
-
-
+    
     const skip = (page - 1) * limit;
     const filter = {}
-    filter.isDisabled = isDisabled
+    console.log(isDisabled)
+    if(isDisabled?.trim()){
+      
+      const isDisabled =req.query.isDisabled;
+      filter.isDisabled = isDisabled
+    }
     if (search) {
 
       filter.$or = [

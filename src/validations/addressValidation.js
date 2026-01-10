@@ -7,14 +7,12 @@ const createAddressSchema = Joi.object({
     "string.min": "Customer address must be at least 3 characters long",
   }),
   customerState: Joi.string()
-    .valid("label1", "label2", "label3", "label4", "label5")
     .required()
     .messages({
       "any.only": "Invalid state selected",
       "string.empty": "Customer state is required",
     }),
   customerCity: Joi.string()
-    .valid("label1", "label2", "label3", "label4", "label5")
     .required()
     .messages({
       "any.only": "Invalid city selected",
@@ -43,20 +41,18 @@ const createAddressSchema = Joi.object({
 
 const updateAddressSchema = Joi.object({
   customerAddress: Joi.string().min(3).max(255),
-  customerState: Joi.string().valid(
-    "label1",
-    "label2",
-    "label3",
-    "label4",
-    "label5"
-  ),
-  customerCity: Joi.string().valid(
-    "label1",
-    "label2",
-    "label3",
-    "label4",
-    "label5"
-  ),
+  customerState: Joi.string()
+    .required()
+    .messages({
+      "any.only": "Invalid state selected",
+      "string.empty": "Customer state is required",
+    }),
+  customerCity: Joi.string()
+    .required()
+    .messages({
+      "any.only": "Invalid city selected",
+      "string.empty": "Customer city is required",
+    }),
   landmark: Joi.string().allow("", null),
   customerProfession: Joi.string().allow("", null),
   customerSalary: Joi.number().min(0).allow(null),
