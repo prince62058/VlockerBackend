@@ -505,6 +505,144 @@ const getDueInstallments = async (req, res) => {
   }
 };
 
+const { sendNotificationCore } = require("../lib/notifications");
+
+const lockDevice = async (req, res) => {
+  try {
+    const { loanId } = req.params;
+    console.log("---------------- LOCK DEVICE REQUEST ----------------");
+    console.log("Requested Loan ID:", loanId);
+
+    const loan = await Loan.findById(loanId).populate("customerId");
+    if (!loan) {
+      console.log("Error: Loan not found");
+      return res
+        .status(404)
+        .json({ success: false, message: "Loan not found" });
+    }
+
+    const customer = loan.customerId;
+    if (!customer) {
+      console.log("Error: Customer not found in loan doc");
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found for this loan" });
+    }
+    console.log(
+      "Found Customer:",
+      customer.customerName,
+      "Mobile:",
+      customer.customerMobileNumber
+    );
+
+    // Normalize phone?
+    // Trying exact match first
+    const searchPhone = customer.customerMobileNumber;
+    console.log("Searching for User with phone:", searchPhone);
+
+    const user = await User.findOne({ phone: searchPhone });
+
+    if (!user) {
+      console.log("Error: User not found with phone:", searchPhone);
+      return res.status(404).json({
+        success: false,
+        message: `User not found with phone ${searchPhone}. User must login explicitly.`,
+      });
+    }
+
+    if (!user.pushNotificationToken) {
+      console.log("Error: User found but no FCM Token. User:", user._id);
+      return res.status(404).json({
+        success: false,
+        message:
+          "User/Token not found. Ensure User has logged into the App and granted permissions.",
+      });
+    }
+
+    console.log("Found User:", user._id, "Token:", user.pushNotificationToken);
+
+    try {
+      await sendNotificationCore({
+        userId: user._id,
+        title: "Device Lock",
+        bodi: "Your device is being locked due to overdue payment.",
+        data: { type: "LOCK" },
+        silent: true,
+        highPriority: true,
+      });
+    } catch (firebaseError) {
+      console.error("Firebase Send Error detected:", firebaseError);
+      if (
+        firebaseError.code === "messaging/registration-token-not-registered" ||
+        firebaseError.message.includes("Requested entity was not found")
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Lock Failed: User's App Token is invalid or expired. Ask customer to Logout and Login again.",
+        });
+      }
+      throw firebaseError;
+    }
+
+    console.log("Notification Sent via Firebase Admin");
+
+    loan.deviceUnlockStatus = "LOCKED";
+    await loan.save();
+
+    console.log("Loan Status Updated to LOCKED");
+    res
+      .status(200)
+      .json({ success: true, message: "Lock command sent successfully" });
+  } catch (error) {
+    console.error("Lock Device Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error locking device",
+      error: error.message,
+    });
+  }
+};
+
+const unlockDevice = async (req, res) => {
+  try {
+    const { loanId } = req.params;
+    const loan = await Loan.findById(loanId).populate("customerId");
+    if (!loan) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Loan not found" });
+    }
+
+    const customer = loan.customerId;
+    const user = await User.findOne({ phone: customer.customerMobileNumber });
+
+    if (user && user.pushNotificationToken) {
+      await sendNotificationCore({
+        userId: user._id,
+        title: "Device Unlocked",
+        bodi: "Your device has been unlocked.",
+        data: { type: "UNLOCK" },
+        silent: true,
+        highPriority: true,
+      });
+    }
+
+    loan.deviceUnlockStatus = "UNLOCKED";
+    await loan.save();
+
+    res
+      .status(200)
+      .json({ success: true, message: "Unlock command sent successfully" });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error unlocking device",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCustomerloan,
   getAllCustomersloan,
@@ -513,4 +651,6 @@ module.exports = {
   deleteCustomerloan,
   getAllloans,
   getDueInstallments,
+  lockDevice,
+  unlockDevice,
 };

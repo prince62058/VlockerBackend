@@ -7,6 +7,8 @@ const {
   deleteCustomerloan,
   getAllloans,
   getDueInstallments,
+  lockDevice,
+  unlockDevice,
 } = require("../controllers/CustomerLoan.controller.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
 const validateRequest = require("../middleware/validateRequest.js");
@@ -20,7 +22,7 @@ const router = express.Router({ mergeParams: true });
 
 router.use(authMiddleware);
 
-router.get('/dueInstallments',getDueInstallments)
+router.get("/dueInstallments", getDueInstallments);
 router.get("/:customerId", getAllCustomersloan);
 
 router.get("/", getAllloans);
@@ -36,5 +38,8 @@ router.get("/single/:loanId", getCustomerloanById);
 router.put("/:loanId", validateRequest(updateLoanSchema), updateCustomerloan);
 
 router.delete("/:loanId", deleteCustomerloan);
+
+router.post("/lock/:loanId", lockDevice);
+router.post("/unlock/:loanId", unlockDevice);
 
 module.exports = router;

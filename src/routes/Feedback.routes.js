@@ -5,7 +5,7 @@ const {
   getAllFeedbacks,
   getFeedbackById,
 } = require("../controllers/Feedback.controller.js");
-const authMiddleware = require("../middleware/auth.middleware");
+const authMiddleware = require("../middleware/auth.middleware.js");
 
 const router = express.Router();
 

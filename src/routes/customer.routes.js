@@ -10,7 +10,7 @@ const {
   completePanKYC,
   addBankPassbook,
   registerCustomer,
-} = require("../controllers/customer.controller");
+} = require("../controllers/customer.controller.js");
 
 const authMiddleware = require("../middleware/auth.middleware.js");
 const { uploadImage } = require("../middleware/upload.middleware.js");
@@ -22,7 +22,7 @@ const {
   panKycSchema,
   bankPassbookSchema,
   updateCustomerSchema,
-} = require("../validations/customerValidation");
+} = require("../validations/customerValidation.js");
 
 const router = express.Router();
 
@@ -32,10 +32,7 @@ router.post(
   validateRequest(sendCustomerOtpSchema),
   sendCustomerOtp
 );
-router.post(
-  "/register",
-  registerCustomer
-);
+router.post("/register", registerCustomer);
 router.post(
   "/verify-and-create",
   validateRequest(verifyCustomerOtpSchema),
@@ -44,7 +41,12 @@ router.post(
 
 router.get("/", getAllCustomers);
 router.get("/:id", getCustomerById);
-router.put("/:id", validateRequest(updateCustomerSchema),uploadImage.single('profileUrl'), updateCustomer);
+router.put(
+  "/:id",
+  validateRequest(updateCustomerSchema),
+  uploadImage.single("profileUrl"),
+  updateCustomer
+);
 router.delete("/:id", deleteCustomer);
 
 router.put(
