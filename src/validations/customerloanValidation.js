@@ -37,19 +37,19 @@ const createLoanSchema = Joi.object({
   downPayment: Joi.number().min(0).optional(),
   frequency: Joi.string()
     .valid("monthly", "weekly", "daily")
-    .empty('').
-    default("monthly"),
+    .empty("")
+    .default("monthly"),
   numberOfEMIs: Joi.number().integer().min(1).optional(),
   interestRate: Joi.number().min(0).optional(),
   loanAmount: Joi.number().min(0).required(),
   emiAmount: Joi.number().min(0).optional(),
-firstEmiDate: Joi.date().optional().empty(''),
+  firstEmiDate: Joi.date().optional().empty(""),
 
   financer: Joi.string().valid("admin", "shop owner"),
-  paymentOptions: Joi.string().
-    empty('')
-    .valid("cash", "upi", "autopay/autodebit").
-     default("upi"),
+  paymentOptions: Joi.string()
+    .empty("")
+    .valid("cash", "upi", "autopay/autodebit")
+    .default("upi"),
   description: Joi.string().allow("").optional(),
   autoUnlock: Joi.boolean().optional(),
   // emiStartDate: Joi.date().optional(),
@@ -60,8 +60,9 @@ firstEmiDate: Joi.date().optional().empty(''),
   deviceUnlockStatus: Joi.string()
     .valid("LOCKED", "UNLOCKED")
     .default("UNLOCKED"),
-  // installments: Joi.array().items(installmentSchema).optional(),
-});
+  // EDITED: Allowed installments and unknown fields
+  installments: Joi.array().items(installmentSchema).optional(),
+}).unknown(true);
 
 const updateLoanSchema = Joi.object({
   installationType: Joi.string().valid("New Phone", "Old/Running Phone"),
@@ -87,7 +88,9 @@ const updateLoanSchema = Joi.object({
   loanStatus: Joi.string().valid("APPROVED", "PENDING", "REJECTED", "CLOSED"),
   deviceUnlockStatus: Joi.string().valid("LOCKED", "UNLOCKED"),
   installments: Joi.array().items(installmentSchema),
-}).min(1);
+})
+  .min(1)
+  .unknown(true);
 
 const paramIdSchema = Joi.object({
   customerId: objectId.optional(),
