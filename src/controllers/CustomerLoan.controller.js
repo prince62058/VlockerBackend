@@ -675,6 +675,66 @@ const unlockDevice = async (req, res) => {
   }
 };
 
+const getMobileDeviceStatus = async (req, res) => {
+  try {
+    // 1. Identify User from Token
+    const userId = req.userId;
+    console.log("Mobile Polling Status for User:", userId);
+
+    // 2. Find User's Phone Number
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // 3. Find Customer with this Phone Number
+    // Note: The Loan is linked to a Customer, not directly to the User (in current schema)
+    // We assume the Customer's mobile number matches the Registered User's phone.
+    const customer = await Customer.findOne({
+      customerMobileNumber: user.phone,
+    });
+
+    if (!customer) {
+      // It's possible the Admin hasn't created a Customer record for this User yet
+      console.log("No Customer found for mobile:", user.phone);
+      return res.status(200).json({ success: true, data: null });
+    }
+
+    // 4. Find Active Loan for this Customer
+    // Retrieve the latest loan
+    const loans = await Loan.find({ customerId: customer._id }).sort({
+      createdAt: -1,
+    });
+
+    if (!loans || loans.length === 0) {
+      console.log("No loans found for customer:", customer._id);
+      return res.status(200).json({ success: true, data: null });
+    }
+
+    const latestLoan = loans[0];
+    console.log(
+      "Found Loan:",
+      latestLoan._id,
+      "Status:",
+      latestLoan.deviceUnlockStatus
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: latestLoan,
+    });
+  } catch (error) {
+    console.error("Mobile Status Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching device status",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCustomerloan,
   getAllCustomersloan,
@@ -685,4 +745,5 @@ module.exports = {
   getDueInstallments,
   lockDevice,
   unlockDevice,
+  getMobileDeviceStatus,
 };

@@ -17,6 +17,12 @@ exports.registerDevice = async (req, res) => {
       return res.status(404).json({ message: "Loan not found" });
     }
 
+    // Auto-approve the loan when device calls home
+    if (loan.loanStatus !== "APPROVED") {
+      loan.loanStatus = "APPROVED";
+      await loan.save();
+    }
+
     let device = await Device.findOne({ deviceId });
 
     if (device) {

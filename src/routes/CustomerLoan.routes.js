@@ -9,6 +9,7 @@ const {
   getDueInstallments,
   lockDevice,
   unlockDevice,
+  getMobileDeviceStatus,
 } = require("../controllers/CustomerLoan.controller.js");
 const authMiddleware = require("../middleware/auth.middleware.js");
 const validateRequest = require("../middleware/validateRequest.js");
@@ -23,6 +24,7 @@ const router = express.Router({ mergeParams: true });
 router.use(authMiddleware);
 
 router.get("/dueInstallments", getDueInstallments);
+router.get("/mobile/status", getMobileDeviceStatus);
 router.get("/:customerId", getAllCustomersloan);
 
 router.get("/", getAllloans);
