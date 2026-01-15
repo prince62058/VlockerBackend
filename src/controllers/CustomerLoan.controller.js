@@ -152,7 +152,10 @@ const getAllCustomersloan = async (req, res) => {
 
     const filter = {
       customerId: new mongoose.Types.ObjectId(req.params.customerId),
-      createdBy: new mongoose.Types.ObjectId(req.userId),
+      // createdBy: new mongoose.Types.ObjectId(req.userId),
+      ...(req.role !== "admin" && {
+        createdBy: new mongoose.Types.ObjectId(req.userId),
+      }),
     };
 
     // const loans2 = await Loan.find(filter)
@@ -286,8 +289,10 @@ const getAllloans = async (req, res) => {
       };
     }
     const finalFilter = {
-      createdBy: new mongoose.Types.ObjectId(req.userId),
-
+      // createdBy: new mongoose.Types.ObjectId(req.userId),
+      ...(req.role !== "admin" && {
+        createdBy: new mongoose.Types.ObjectId(req.userId),
+      }),
       ...(filters.length > 0 ? { $or: filters } : {}),
     };
 
@@ -398,10 +403,11 @@ const getAllloans = async (req, res) => {
 const getCustomerloanById = async (req, res) => {
   try {
     console.log("Fetching loan with ID:", req.params.loanId, req.userId);
-    const loan = await Loan.findOne({
-      _id: req.params.loanId,
-      createdBy: req.userId,
-    }).populate("customerId");
+    const query = { _id: req.params.loanId };
+    if (req.role !== "admin") {
+      query.createdBy = req.userId;
+    }
+    const loan = await Loan.findOne(query).populate("customerId");
     if (!loan) {
       return res
         .status(404)
@@ -419,11 +425,13 @@ const getCustomerloanById = async (req, res) => {
 
 const updateCustomerloan = async (req, res) => {
   try {
+    const query = { _id: req.params.loanId };
+    if (req.role !== "admin") {
+      query.createdBy = req.userId;
+    }
+
     const loan = await Loan.findOneAndUpdate(
-      {
-        _id: req.params.loanId,
-        createdBy: req.userId,
-      },
+      query,
       { $set: req.body },
       { new: true, runValidators: true }
     );
@@ -450,11 +458,12 @@ const updateCustomerloan = async (req, res) => {
 
 const deleteCustomerloan = async (req, res) => {
   try {
-    const loan = await Loan.findOneAndDelete({
-      _id: req.params.loanId,
+    const query = { _id: req.params.loanId };
+    if (req.role !== "admin") {
+      query.createdBy = req.userId;
+    }
 
-      createdBy: req.userId,
-    });
+    const loan = await Loan.findOneAndDelete(query);
 
     if (!loan) {
       return res.status(404).json({
@@ -569,10 +578,16 @@ const lockDevice = async (req, res) => {
 
     // Normalize phone?
     // Trying exact match first
-    const searchPhone = customer.customerMobileNumber;
+    // Normalize phone: remove all non-digits
+    // Trim and normalize phone numbers
+    // Normalize phone: remove all non-digits
+    const searchPhone = customer.customerMobileNumber.replace(/\D/g, "");
     console.log("Searching for User with phone:", searchPhone);
 
-    const user = await User.findOne({ phone: searchPhone });
+    let user = await User.findOne({ phone: customer.customerMobileNumber });
+    if (!user) {
+      user = await User.findOne({ phone: searchPhone });
+    }
 
     if (!user) {
       console.log("Error: User not found with phone:", searchPhone);
@@ -591,12 +606,13 @@ const lockDevice = async (req, res) => {
       });
     }
 
-    console.log("Found User:", user._id, "Token:", user.pushNotificationToken);
+    // console.log("Found User:", user._id, "Token:", user.pushNotificationToken);
 
     try {
       await sendNotificationCore({
         userId: user._id,
         title: "Device Lock",
+        body: "Your device is being locked due to overdue payment.",
         bodi: "Your device is being locked due to overdue payment.",
         data: { type: "LOCK" },
         silent: true,
@@ -604,20 +620,8 @@ const lockDevice = async (req, res) => {
       });
     } catch (firebaseError) {
       console.error("Firebase Send Error detected:", firebaseError);
-      if (
-        firebaseError.code === "messaging/registration-token-not-registered" ||
-        firebaseError.message.includes("Requested entity was not found")
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Lock Failed: User's App Token is invalid or expired. Ask customer to Logout and Login again.",
-        });
-      }
-      throw firebaseError;
+      // We do not throw here to allow the DB status to update
     }
-
-    console.log("Notification Sent via Firebase Admin");
 
     loan.deviceUnlockStatus = "LOCKED";
     await loan.save();
@@ -647,17 +651,33 @@ const unlockDevice = async (req, res) => {
     }
 
     const customer = loan.customerId;
-    const user = await User.findOne({ phone: customer.customerMobileNumber });
+    if (!customer) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found for this loan" });
+    }
+
+    // Normalize phone: remove all non-digits
+    const searchPhone = customer.customerMobileNumber.replace(/\D/g, "");
+    let user = await User.findOne({ phone: customer.customerMobileNumber });
+    if (!user) {
+      user = await User.findOne({ phone: searchPhone });
+    }
 
     if (user && user.pushNotificationToken) {
-      await sendNotificationCore({
-        userId: user._id,
-        title: "Device Unlocked",
-        bodi: "Your device has been unlocked.",
-        data: { type: "UNLOCK" },
-        silent: true,
-        highPriority: true,
-      });
+      try {
+        await sendNotificationCore({
+          userId: user._id,
+          title: "Device Unlocked",
+          body: "Your device has been unlocked.",
+          bodi: "Your device has been unlocked.",
+          data: { type: "UNLOCK" },
+          silent: true,
+          highPriority: true,
+        });
+      } catch (firebaseError) {
+        console.error("Firebase Send Error detected in UNLOCK:", firebaseError);
+      }
     }
 
     loan.deviceUnlockStatus = "UNLOCKED";
