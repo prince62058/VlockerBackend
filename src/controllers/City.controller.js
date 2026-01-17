@@ -1,11 +1,17 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 const City = require("../models/City.model");
 
 exports.createCity = async (req, res) => {
   try {
     const { cityName, stateId } = req.body;
     const city = await City.create({ cityName, stateId });
-    return res.status(201).json({ success: true,message:"City created successfully", data: city });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        message: "City created successfully",
+        data: city,
+      });
   } catch (error) {
     console.error("Error creating city:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -47,18 +53,16 @@ exports.getAllCities = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const search = req.query.search || undefined;
-    
-    const filter = {  };
+
+    const filter = {};
     if (search) {
-      
       filter.cityName = {
         $regex: search.trim(),
-        $options: 'i'
-        
-      }
+        $options: "i",
+      };
     }
     const cities = await City.aggregate([
-      {$match:filter},
+      { $match: filter },
       {
         $lookup: {
           from: "states",
@@ -77,13 +81,13 @@ exports.getAllCities = async (req, res) => {
         },
       },
       { $sort: { cityName: 1 } },
-      
+
       { $skip: skip },
       { $limit: limit },
     ]);
-    
+
     const totalCities = await City.countDocuments(filter);
-    
+
     const pagination = {
       currentPage: page,
       limit,
@@ -95,7 +99,7 @@ exports.getAllCities = async (req, res) => {
     return res.status(200).json({
       success: true,
       pagination,
-      message:"Cities fetched successfully",
+      message: "Cities fetched successfully",
       data: cities,
     });
   } catch (error) {
@@ -112,23 +116,20 @@ exports.getCitiesByState = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const stateId=req.params?.stateId
+    const stateId = req.params?.stateId;
 
     const search = req.query.search || undefined;
-    
-    const filter = {stateId:new  mongoose.Types.ObjectId(stateId)};
-   
+
+    const filter = { stateId: new mongoose.Types.ObjectId(stateId) };
+
     if (search) {
-      
       filter.cityName = {
         $regex: search.trim(),
-        $options: 'i'
-        
-      }
-      
+        $options: "i",
+      };
     }
     const cities = await City.aggregate([
-      {$match:filter},
+      { $match: filter },
       {
         $lookup: {
           from: "states",
@@ -147,13 +148,13 @@ exports.getCitiesByState = async (req, res) => {
         },
       },
       { $sort: { cityName: 1 } },
-      
+
       { $skip: skip },
       { $limit: limit },
     ]);
-    
+
     const totalCities = await City.countDocuments(filter);
-    
+
     const pagination = {
       currentPage: page,
       limit,
@@ -165,7 +166,7 @@ exports.getCitiesByState = async (req, res) => {
     return res.status(200).json({
       success: true,
       pagination,
-      message:"Cities fetched successfully",
+      message: "Cities fetched successfully",
       data: cities,
     });
   } catch (error) {
@@ -188,7 +189,13 @@ exports.updateCity = async (req, res) => {
         .status(404)
         .json({ success: false, message: "City not found" });
 
-    res.status(200).json({ success: true, data: updatedCity , message:"City Updated successfully"});
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: updatedCity,
+        message: "City Updated successfully",
+      });
   } catch (error) {
     console.error("Error updating city:", error);
     res.status(500).json({ success: false, message: "Internal server error" });

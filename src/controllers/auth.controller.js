@@ -2,6 +2,8 @@ const User = require("../models/UserModel");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
+const { sendOtpViaMSG91 } = require("../utils/sms");
+
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || "set-a-secure-jwt-secret";
 const DEFAULT_OTP_LENGTH = parseInt(process.env.PHONE_OTP_LENGTH || "6", 10);
@@ -132,7 +134,8 @@ const loginAdmin = async (req, res) => {
         id: admin._id,
         name: admin.name,
         email: admin.email,
-
+        role: admin.role,
+        isProfileCompleted: admin.isProfileCompleted || true,
         token,
       },
     });
@@ -157,6 +160,9 @@ const sendOtp = async (req, res) => {
       });
     }
     let user = await User.findOne({ phone }).select("+phoneOtp.codeHash");
+    console.log(
+      `Debug: Checking User for phone ${phone}. Found: ${user ? "Yes" : "No"}`
+    );
 
     // [MODIFIED] Added check for 'login' type. If user doesn't exist during login, return 404.
     if (!user) {
@@ -235,50 +241,6 @@ const sendOtp = async (req, res) => {
   }
 };
 
-const https = require("https");
-
-const sendOtpViaMSG91 = async (mobile, otp) => {
-  console.log(mobile, otp);
-  return new Promise((resolve, reject) => {
-    const options = {
-      method: "POST",
-      hostname: "api.msg91.com",
-      path: "/api/v5/flow/",
-      headers: {
-        authkey: process.env.AUTH_KEY,
-        "content-type": "application/json",
-      },
-    };
-
-    const req = https.request(options, (res) => {
-      const chunks = [];
-
-      res.on("data", (chunk) => chunks.push(chunk));
-
-      res.on("end", () => {
-        const body = Buffer.concat(chunks).toString();
-        console.log("OTP Sent:", body);
-        resolve(body);
-      });
-    });
-
-    req.on("error", (err) => {
-      console.error("Error sending OTP:", err);
-      reject(err);
-    });
-
-    const payload = {
-      flow_id: "63614b3dabf10640e61fa856",
-      sender: "DSMONL",
-      mobiles: `91${mobile}`,
-      otp: otp,
-    };
-
-    req.write(JSON.stringify(payload));
-    req.end();
-  });
-};
-
 const verifyOtp = async (req, res) => {
   const { phone, otpCode } = req.body;
   if (!phone) {
@@ -340,6 +302,7 @@ const verifyOtp = async (req, res) => {
   await user.save();
   const tokenPayload = {
     userId: user.id,
+    role: user.role,
   };
 
   const token = jwt.sign(tokenPayload, JWT_SECRET);

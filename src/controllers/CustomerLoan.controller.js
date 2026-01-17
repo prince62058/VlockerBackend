@@ -1,7 +1,7 @@
 const Loan = require("../models/CustomerLoan.model");
 const Customer = require("../models/Customer.model");
 const User = require("../models/UserModel");
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
 const generateInstallments = ({
   numberOfEMIs,
@@ -433,7 +433,7 @@ const updateCustomerloan = async (req, res) => {
     const loan = await Loan.findOneAndUpdate(
       query,
       { $set: req.body },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!loan) {
@@ -573,13 +573,9 @@ const lockDevice = async (req, res) => {
       "Found Customer:",
       customer.customerName,
       "Mobile:",
-      customer.customerMobileNumber
+      customer.customerMobileNumber,
     );
 
-    // Normalize phone?
-    // Trying exact match first
-    // Normalize phone: remove all non-digits
-    // Trim and normalize phone numbers
     // Normalize phone: remove all non-digits
     const searchPhone = customer.customerMobileNumber.replace(/\D/g, "");
     console.log("Searching for User with phone:", searchPhone);
@@ -589,47 +585,39 @@ const lockDevice = async (req, res) => {
       user = await User.findOne({ phone: searchPhone });
     }
 
-    if (!user) {
-      console.log("Error: User not found with phone:", searchPhone);
-      return res.status(404).json({
-        success: false,
-        message: `User not found with phone ${searchPhone}. User must login explicitly.`,
-      });
+    // Try to send FCM notification if User exists with token
+    // But don't fail if User/token not found - status update is what matters
+    if (user && user.pushNotificationToken) {
+      console.log("Found User:", user._id, "Sending FCM notification...");
+      try {
+        await sendNotificationCore({
+          userId: user._id,
+          title: "Device Lock",
+          body: "Your device is being locked due to overdue payment.",
+          bodi: "Your device is being locked due to overdue payment.",
+          data: { type: "LOCK" },
+          silent: true,
+          highPriority: true,
+        });
+        console.log("FCM notification sent successfully");
+      } catch (firebaseError) {
+        console.error("Firebase Send Error detected:", firebaseError);
+        // Continue anyway - mobile app will poll status
+      }
+    } else {
+      console.log(
+        "User/Token not found. Skipping FCM notification. Mobile app will poll status.",
+      );
     }
 
-    if (!user.pushNotificationToken) {
-      console.log("Error: User found but no FCM Token. User:", user._id);
-      return res.status(404).json({
-        success: false,
-        message:
-          "User/Token not found. Ensure User has logged into the App and granted permissions.",
-      });
-    }
-
-    // console.log("Found User:", user._id, "Token:", user.pushNotificationToken);
-
-    try {
-      await sendNotificationCore({
-        userId: user._id,
-        title: "Device Lock",
-        body: "Your device is being locked due to overdue payment.",
-        bodi: "Your device is being locked due to overdue payment.",
-        data: { type: "LOCK" },
-        silent: true,
-        highPriority: true,
-      });
-    } catch (firebaseError) {
-      console.error("Firebase Send Error detected:", firebaseError);
-      // We do not throw here to allow the DB status to update
-    }
-
+    // Always update lock status in database
     loan.deviceUnlockStatus = "LOCKED";
     await loan.save();
 
     console.log("Loan Status Updated to LOCKED");
     res
       .status(200)
-      .json({ success: true, message: "Lock command sent successfully" });
+      .json({ success: true, message: "Device locked successfully" });
   } catch (error) {
     console.error("Lock Device Error:", error);
     res.status(500).json({
@@ -643,8 +631,12 @@ const lockDevice = async (req, res) => {
 const unlockDevice = async (req, res) => {
   try {
     const { loanId } = req.params;
+    console.log("---------------- UNLOCK DEVICE REQUEST ----------------");
+    console.log("Requested Loan ID:", loanId);
+
     const loan = await Loan.findById(loanId).populate("customerId");
     if (!loan) {
+      console.log("Error: Loan not found");
       return res
         .status(404)
         .json({ success: false, message: "Loan not found" });
@@ -652,19 +644,31 @@ const unlockDevice = async (req, res) => {
 
     const customer = loan.customerId;
     if (!customer) {
+      console.log("Error: Customer not found in loan doc");
       return res
         .status(404)
         .json({ success: false, message: "Customer not found for this loan" });
     }
+    console.log(
+      "Found Customer:",
+      customer.customerName,
+      "Mobile:",
+      customer.customerMobileNumber,
+    );
 
     // Normalize phone: remove all non-digits
     const searchPhone = customer.customerMobileNumber.replace(/\D/g, "");
+    console.log("Searching for User with phone:", searchPhone);
+
     let user = await User.findOne({ phone: customer.customerMobileNumber });
     if (!user) {
       user = await User.findOne({ phone: searchPhone });
     }
 
+    // Try to send FCM notification if User exists with token
+    // But don't fail if User/token not found - status update is what matters
     if (user && user.pushNotificationToken) {
+      console.log("Found User:", user._id, "Sending FCM notification...");
       try {
         await sendNotificationCore({
           userId: user._id,
@@ -675,18 +679,27 @@ const unlockDevice = async (req, res) => {
           silent: true,
           highPriority: true,
         });
+        console.log("FCM notification sent successfully");
       } catch (firebaseError) {
         console.error("Firebase Send Error detected in UNLOCK:", firebaseError);
+        // Continue anyway - mobile app will poll status
       }
+    } else {
+      console.log(
+        "User/Token not found. Skipping FCM notification. Mobile app will poll status.",
+      );
     }
 
+    // Always update unlock status in database
     loan.deviceUnlockStatus = "UNLOCKED";
     await loan.save();
 
+    console.log("Loan Status Updated to UNLOCKED");
     res
       .status(200)
-      .json({ success: true, message: "Unlock command sent successfully" });
+      .json({ success: true, message: "Device unlocked successfully" });
   } catch (error) {
+    console.error("Unlock Device Error:", error);
     res.status(500).json({
       success: false,
       message: "Error unlocking device",
@@ -738,7 +751,7 @@ const getMobileDeviceStatus = async (req, res) => {
       "Found Loan:",
       latestLoan._id,
       "Status:",
-      latestLoan.deviceUnlockStatus
+      latestLoan.deviceUnlockStatus,
     );
 
     return res.status(200).json({

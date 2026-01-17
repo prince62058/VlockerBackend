@@ -10,7 +10,7 @@ const customerSchema = new mongoose.Schema(
     },
     customerName: {
       type: String,
-      trim: true, 
+      trim: true,
     },
     customerMobileNumber: {
       type: String,
@@ -45,11 +45,11 @@ const customerSchema = new mongoose.Schema(
     // },
     isVerified: {
       type: Boolean,
-      default: false,  
+      default: false,
     },
-    profileUrl:{
-      type:String,
-      trim:true
+    profileUrl: {
+      type: String,
+      trim: true,
     },
 
     kyc: {
@@ -70,24 +70,24 @@ const customerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-customerSchema.virtual('Loan',{
-  ref: 'Loan',
-  localField: '_id',
-  foreignField: 'customerId',
-})
-customerSchema.virtual('Bank',{
-  ref: 'Bank',
-  localField: '_id',
-  foreignField: 'customerId',
-})
-customerSchema.virtual('Address',{
-  ref: 'Address',
-  localField: '_id',
-  foreignField: 'customerId',
-  justOne: true
-})
-customerSchema.set('toObject',{virtuals:true});
-customerSchema.set('toJSON',{virtuals:true});
+customerSchema.virtual("Loan", {
+  ref: "Loan",
+  localField: "_id",
+  foreignField: "customerId",
+});
+customerSchema.virtual("Bank", {
+  ref: "Bank",
+  localField: "_id",
+  foreignField: "customerId",
+});
+customerSchema.virtual("Address", {
+  ref: "Address",
+  localField: "_id",
+  foreignField: "customerId",
+  justOne: true,
+});
+customerSchema.set("toObject", { virtuals: true });
+customerSchema.set("toJSON", { virtuals: true });
 const Customer = mongoose.model("Customer", customerSchema);
 
 module.exports = Customer;

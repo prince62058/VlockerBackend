@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
- 
+
 const customerloanSchema = new mongoose.Schema(
   {
     customerId: {
@@ -10,17 +10,17 @@ const customerloanSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    amountPaid:{
-      type:Number,
-      default:0
+    amountPaid: {
+      type: Number,
+      default: 0,
     },
-    amountLeft:{
-      type:Number,
-      default:0
+    amountLeft: {
+      type: Number,
+      default: 0,
     },
-    installmentsPaid:{
-      type:Number,
-      default:0
+    installmentsPaid: {
+      type: Number,
+      default: 0,
     },
     installationType: {
       type: String,
@@ -28,11 +28,9 @@ const customerloanSchema = new mongoose.Schema(
     },
     mobileBrand: {
       type: String,
-     
     },
     mobileModel: {
       type: String,
-      
     },
     imeiNumber1: {
       type: String,
@@ -104,13 +102,11 @@ const customerloanSchema = new mongoose.Schema(
       type: String,
       enum: ["LOCKED", "UNLOCKED"],
       default: "UNLOCKED",
-
     },
     installments: [
       {
         installmentNumber: {
           type: Number,
-
         },
         dueDate: {
           type: Date,
@@ -143,31 +139,28 @@ const customerloanSchema = new mongoose.Schema(
         },
       },
     ],
-
   },
   { timestamps: true }
 );
 
-customerloanSchema.pre('save', async function (next) {
+customerloanSchema.pre("save", async function (next) {
   try {
-    const userId = this.createdBy
+    const userId = this.createdBy;
 
     if (!userId) {
-      console.log("No createdBy on this doc")
-      return next()
+      console.log("No createdBy on this doc");
+      return next();
     }
 
-    await mongoose.model('User').findOneAndUpdate(
-      { _id: userId },
-      { $inc: { keys: -1 } },
-      { new: true }
-    )
+    await mongoose
+      .model("User")
+      .findOneAndUpdate({ _id: userId }, { $inc: { keys: -1 } }, { new: true });
 
-    next()
+    next();
   } catch (err) {
-    next(err)
+    next(err);
   }
-})
+});
 
 const Loan = mongoose.model("Loan", customerloanSchema);
 

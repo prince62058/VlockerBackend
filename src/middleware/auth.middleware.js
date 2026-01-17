@@ -17,7 +17,7 @@ const authMiddleware = async (req, res, next) => {
     req.userId = decoded.userId;
     req.role = decoded.role;
 
-    if (req.role === 'admin' && req.query.userId) {
+    if (req.role === "admin" && req.query.userId) {
       req.userId = req.query.userId;
     }
     // if (req.role !== 'admin') {
@@ -33,6 +33,7 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.log("Auth Middleware Error:", error.message);
     return res
       .status(401)
       .json({ success: false, message: "Invalid or expired token" });

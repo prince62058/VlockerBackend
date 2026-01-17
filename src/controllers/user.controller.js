@@ -1,8 +1,8 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 const User = require("../models/UserModel.js");
 const Business = require("../models/BusinessProfile.js");
-const admin = require('../config/firebaseAdmin.js');
-
+const admin = require("../config/firebaseAdmin.js");
+const bcrypt = require("bcrypt");
 
 const completeProfile = async (req, res) => {
   const { name, email } = req.body;
@@ -46,25 +46,27 @@ const getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const isDisabled =req.query?.isDisabled;
+    const isDisabled = req.query?.isDisabled;
     const search = req.query.search || undefined;
-    
+
     const skip = (page - 1) * limit;
-    const filter = {}
-    console.log(isDisabled)
-    if(isDisabled?.trim()){
-      
-      const isDisabled =req.query.isDisabled;
-      filter.isDisabled = isDisabled
+    const filter = {};
+    console.log(isDisabled);
+    if (isDisabled?.trim()) {
+      const isDisabled = req.query.isDisabled;
+      filter.isDisabled = isDisabled;
     }
     if (search) {
-
       filter.$or = [
-        { phone: { $regex: search.trim(), $options: 'i' } },
-        { name: { $regex: search.trim(), $options: 'i' } },
-        { email: { $regex: search.trim(), $options: 'i' } }
-      ]
+        { phone: { $regex: search.trim(), $options: "i" } },
+        { name: { $regex: search.trim(), $options: "i" } },
+        { email: { $regex: search.trim(), $options: "i" } },
+      ];
+    }
 
+    // Add role filter
+    if (req.query.role) {
+      filter.role = req.query.role;
     }
 
     const users = await User.find(filter)
@@ -135,7 +137,7 @@ const getBusinesProfileByUserId = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Error finding user",
+      message: "Error finding user: " + error.message,
       error: error.message,
     });
   }
@@ -235,8 +237,9 @@ const toggleUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: `User ${user.isDisabled ? "deactivated" : "active"
-        } successfully`,
+      message: `User ${
+        user.isDisabled ? "deactivated" : "active"
+      } successfully`,
       user,
     });
   } catch (err) {
@@ -249,15 +252,122 @@ const saveFcmToken = async (req, res) => {
     const userId = req.userId;
     const { pushNotificationToken } = req.body;
     if (!pushNotificationToken || !userId) {
-      return res.status(200).json({ error: 'Token and userId are required' });
+      return res.status(200).json({ error: "Token and userId are required" });
     }
-    await User.findByIdAndUpdate(userId, { pushNotificationToken: pushNotificationToken });
-    const check = await admin.messaging().subscribeToTopic([pushNotificationToken], 'allUsers');
-    console.dir(check.errors, { depth: null })
+    await User.findByIdAndUpdate(userId, {
+      pushNotificationToken: pushNotificationToken,
+    });
+    const check = await admin
+      .messaging()
+      .subscribeToTopic([pushNotificationToken], "allUsers");
+    console.dir(check.errors, { depth: null });
 
-    return res.json({ success: true, message: 'Token registered successfully' });
+    return res.json({
+      success: true,
+      message: "Token registered successfully",
+    });
   } catch (error) {
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+    return res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error deleting user",
+      error: error.message,
+    });
+  }
+};
+
+const updateUserByAdmin = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating user",
+      error: error.message,
+    });
+  }
+};
+
+const createShopEmployee = async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+
+    const existingAdmin = await User.findOne({ email: email.toLowerCase() });
+    if (existingAdmin) {
+      return res.status(409).json({
+        success: false,
+        message: "Admin/Employee with this email already exists",
+      });
+    }
+
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const newAdmin = await User.create({
+      email: email.toLowerCase(),
+      name: name,
+      password: hashedPassword,
+      role: "admin", // Shop Employees are admins
+      isProfileCompleted: true,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Shop Employee created successfully",
+      data: {
+        id: newAdmin._id,
+        name: newAdmin.name,
+        email: newAdmin.email,
+        role: newAdmin.role,
+      },
+    });
+  } catch (error) {
+    console.error("Create Shop Employee error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during creation",
+      error: error.message,
+    });
   }
 };
 
@@ -269,5 +379,8 @@ module.exports = {
   updateBusinessProfile,
   getBusinesProfileByUserId,
   toggleUser,
-  saveFcmToken
+  saveFcmToken,
+  deleteUser,
+  updateUserByAdmin,
+  createShopEmployee,
 };
