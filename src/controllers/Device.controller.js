@@ -2,9 +2,33 @@ const Device = require("../models/Device.model");
 const Loan = require("../models/CustomerLoan.model");
 const Customer = require("../models/Customer.model");
 
-// Mock FCM service for now - replace with actual implementation later
-const sendMockFCM = async (deviceId, data) => {
-  console.log(`[FCM-MOCK] Sending to ${deviceId}:`, data);
+const admin = require("../config/firebaseAdmin");
+
+// Helper to send FCM Command
+const sendFCMCommand = async (deviceId, type, extraData = {}) => {
+  try {
+    const device = await Device.findOne({ deviceId });
+    if (!device || !device.fcmToken) {
+      console.log(`[FCM] No token found for device ${deviceId}`);
+      return;
+    }
+
+    const message = {
+      token: device.fcmToken,
+      data: {
+        type: type, // "LOCK" or "UNLOCK"
+        ...extraData,
+      },
+      android: {
+        priority: "high",
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log(`[FCM] Sent ${type} to ${deviceId}:`, response);
+  } catch (error) {
+    console.error(`[FCM] Error sending ${type} to ${deviceId}:`, error);
+  }
 };
 
 exports.registerDevice = async (req, res) => {
@@ -60,23 +84,17 @@ exports.lockDevice = async (req, res) => {
     const device = await Device.findOneAndUpdate(
       { deviceId },
       { isLocked: true, lockStatus: "LOCKED" },
-      { new: true }
+      { new: true },
     );
 
     if (!device) {
       return res.status(404).json({ message: "Device not found" });
     }
 
-    // Send Command via FCM/Socket
-    const payload = {
-      type: "COMMAND",
-      action: "LOCK_DEVICE",
-      payload: { message: "EMI Overdue. Please Pay." },
-    };
-    await sendMockFCM(deviceId, payload);
-
-    // If you have socket.io instance globally available:
-    // global.io.to(deviceId).emit('command', { action: 'LOCK' });
+    // Send Command via FCM
+    await sendFCMCommand(deviceId, "LOCK", {
+      message: "EMI Overdue. Please Pay.",
+    });
 
     res.json({ success: true, message: "Lock command sent", device });
   } catch (error) {
@@ -92,21 +110,15 @@ exports.unlockDevice = async (req, res) => {
     const device = await Device.findOneAndUpdate(
       { deviceId },
       { isLocked: false, lockStatus: "UNLOCKED" },
-      { new: true }
+      { new: true },
     );
 
     if (!device) {
       return res.status(404).json({ message: "Device not found" });
     }
 
-    // Send Command via FCM/Socket
-    const payload = {
-      type: "COMMAND",
-      action: "UNLOCK_DEVICE",
-    };
-    await sendMockFCM(deviceId, payload);
-
-    // global.io.to(deviceId).emit('command', { action: 'UNLOCK' });
+    // Send Command via FCM
+    await sendFCMCommand(deviceId, "UNLOCK");
 
     res.json({ success: true, message: "Unlock command sent", device });
   } catch (error) {

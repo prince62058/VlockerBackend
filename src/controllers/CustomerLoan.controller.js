@@ -319,6 +319,38 @@ const getAllloans = async (req, res) => {
           preserveNullAndEmptyArrays: true,
         },
       },
+      // Search Filter
+      ...(req.query.search
+        ? [
+            {
+              $match: {
+                $or: [
+                  {
+                    "customerId.customerName": {
+                      $regex: req.query.search,
+                      $options: "i",
+                    },
+                  },
+                  {
+                    "customerId.customerMobileNumber": {
+                      $regex: req.query.search,
+                      $options: "i",
+                    },
+                  },
+                  {
+                    mobileBrand: { $regex: req.query.search, $options: "i" },
+                  },
+                  {
+                    mobileModel: { $regex: req.query.search, $options: "i" },
+                  },
+                  {
+                    imeiNumber1: { $regex: req.query.search, $options: "i" },
+                  },
+                ],
+              },
+            },
+          ]
+        : []),
       {
         $addFields: {
           installmentsPaid: {
