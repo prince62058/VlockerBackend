@@ -462,11 +462,14 @@ const updateCustomerloan = async (req, res) => {
       query.createdBy = req.userId;
     }
 
+    // Check if status is being changed to APPROVED
+    const isApproving = req.body.loanStatus === "APPROVED";
+
     const loan = await Loan.findOneAndUpdate(
       query,
       { $set: req.body },
       { new: true, runValidators: true },
-    );
+    ).populate("customerId");
 
     if (!loan) {
       return res.status(404).json({
@@ -474,6 +477,40 @@ const updateCustomerloan = async (req, res) => {
         message: "Customer loan not found or you are not authorized to update",
       });
     }
+
+    if (isApproving && loan.customerId) {
+      // Send notification to user
+      try {
+        const customer = loan.customerId;
+        // Normalize phone: remove all non-digits
+        const searchPhone = customer.customerMobileNumber.replace(/\D/g, "");
+
+        let user = await User.findOne({ phone: customer.customerMobileNumber });
+        if (!user) {
+          user = await User.findOne({ phone: searchPhone });
+        }
+
+        if (user && user.pushNotificationToken) {
+          console.log("Loan Approved. Sending FCM to user:", user._id);
+          await sendNotificationCore({
+            userId: user._id,
+            title: "Loan Approved",
+            body: "Your loan has been approved successfully.",
+            bodi: "Your loan has been approved successfully.",
+            data: { type: "LOAN_UPDATE" },
+            silent: true,
+            highPriority: true,
+          });
+        } else {
+          console.log(
+            "Loan Approved but User/Token not found for notification.",
+          );
+        }
+      } catch (notifyError) {
+        console.error("Error sending loan approval notification:", notifyError);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Customer loan updated successfully",
